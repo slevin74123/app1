@@ -137,14 +137,19 @@ export default function UserDashboard({
               <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-transparent">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <TabsTrigger value="map" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <TabsTrigger value="map" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative">
                       <Map className="w-4 h-4" />
                       <span className="text-xs font-medium hidden sm:block">Harta Parcarilor</span>
                       <span className="text-xs font-medium sm:hidden">Hartă</span>
+                      {user?.isPremium && (
+                        <Badge variant="secondary" className="absolute -top-1 -right-1 w-2 h-2 p-0 text-xs">
+                          <Crown className="w-1 h-1" />
+                        </Badge>
+                      )}
                     </TabsTrigger>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Harta Parcarilor</p>
+                    <p>Harta Parcarilor {user?.isPremium && "(Premium)"}</p>
                   </TooltipContent>
                 </Tooltip>
 
