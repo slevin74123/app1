@@ -1,14 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { User, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import Image from "next/image";
 interface Testimonial {
   id: string;
   name: string;
@@ -27,11 +28,11 @@ export default function TestimonialsCarousel({
   testimonials = [],
   loading = false,
   error = false,
-  title = "Testimoniale"
+
 }: TestimonialsCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const scrollToIndex = (index: number) => {
+  const scrollToIndex = useCallback((index: number) => {
     if (scrollRef.current) {
       const cardWidth = 320; // Approximate card width + gap
       scrollRef.current.scrollTo({
@@ -40,15 +41,16 @@ export default function TestimonialsCarousel({
       });
       setActiveIndex(index);
     }
-  };
-  const scrollLeft = () => {
+  }, []);
+  const scrollLeft = useCallback(() => {
     const newIndex = Math.max(0, activeIndex - 1);
     scrollToIndex(newIndex);
-  };
-  const scrollRight = () => {
+  }, [activeIndex, scrollToIndex]);
+  
+  const scrollRight = useCallback(() => {
     const newIndex = Math.min(testimonials.length - 1, activeIndex + 1);
     scrollToIndex(newIndex);
-  };
+  }, [activeIndex, testimonials.length, scrollToIndex]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -61,7 +63,7 @@ export default function TestimonialsCarousel({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeIndex, testimonials.length]);
+  }, [scrollLeft, scrollRight]);
   const renderStars = (rating: number) => {
     return Array.from({
       length: 5
@@ -175,7 +177,7 @@ export default function TestimonialsCarousel({
                 <CardHeader className="pb-4">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center overflow-hidden">
-                      {testimonial.avatar ? <img src={testimonial.avatar} alt={`Fotografia utilizatorului ${testimonial.name}`} className="w-full h-full object-cover" /> : <User className="h-6 w-6 text-muted-foreground" aria-hidden="true" />}
+                      {testimonial.avatar ? <Image src={testimonial.avatar} alt={`Fotografia utilizatorului ${testimonial.name}`} width={48} height={48} className="w-full h-full object-cover" /> : <User className="h-6 w-6 text-muted-foreground" aria-hidden="true" />}
                     </div>
                     <div>
                       <h3 className="font-semibold text-sm">{testimonial.name}</h3>
@@ -190,7 +192,7 @@ export default function TestimonialsCarousel({
                 
                 <CardContent>
                   <blockquote className="text-sm text-muted-foreground leading-relaxed">
-                    "{testimonial.comment}"
+                    &quot;{testimonial.comment}&quot;
                   </blockquote>
                 </CardContent>
               </Card>

@@ -1,21 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Map, Car, Users, CheckCircle, Timer, TrendingUp, MessageCircle, Facebook, Instagram, Twitter, Mail, Phone, MapPin, Clock, Leaf, Heart } from "lucide-react";
+import { Car, Users, CheckCircle, Timer, TrendingUp, Facebook, Instagram, Twitter, Mail, Phone, MapPin, Leaf, Heart } from "lucide-react";
 
 // Import subcomponents (to be created)
 import HeaderNavigation from "./HeaderNavigation";
 import FeaturesSection from "./FeaturesSection";
 import HowItWorksSection from "./HowItWorksSection";
-import TestimonialsCarousel from "./TestimonialsCarousel";
+
 
 // Interfaces for data structures
 interface Testimonial {
@@ -135,17 +134,9 @@ export default function LandingPageUndeParchez({
   ctaText = "Începe acum",
   showTestimonials = true
 }: LandingPageUndeParchezProps) {
-  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
-  const [testimonialsError, setTestimonialsError] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
 
-  // Simulate testimonials loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setTestimonialsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
     const element = document.getElementById(sectionId);
@@ -373,7 +364,7 @@ export default function LandingPageUndeParchez({
                         </div>
                         
                         <blockquote className="text-muted-foreground leading-relaxed text-lg group-hover:text-foreground transition-colors">
-                          "{testimonial.comment}"
+                          &quot;{testimonial.comment}&quot;
                         </blockquote>
                       </Card>
                     </motion.div>)}

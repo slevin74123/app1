@@ -3,12 +3,12 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Star, MapPin, Trash2, Navigation, Clock, CheckCircle, XCircle, History, Crown, Calendar } from "lucide-react";
+import { Star, MapPin, Trash2, Navigation, Clock, CheckCircle, XCircle, History, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -139,7 +139,6 @@ const mockTimelineActivities: TimelineActivity[] = [{
   time: "16:40"
 }];
 export default function FavoritesTab({
-  user
 }: FavoritesTabProps) {
   const [favorites, setFavorites] = useState<FavoriteParking[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);

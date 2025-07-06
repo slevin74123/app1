@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 interface User {
   name: string;
@@ -108,7 +108,7 @@ export default function AvailableParkingSpacesTab({
         await new Promise(resolve => setTimeout(resolve, 1000));
         setParkingSpaces(mockParkingSpaces);
         setError(null);
-      } catch (err) {
+      } catch {
         setError("Nu s-au putut încărca parcările disponibile");
       } finally {
         setIsLoading(false);

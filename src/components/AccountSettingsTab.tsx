@@ -2,13 +2,11 @@
 
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
 import { Settings, Bell, MapPin, Crown, LogOut, CheckCircle, User, Shield, Smartphone } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -16,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import Image from "next/image";
+
 interface User {
   name: string;
   avatarUrl: string;
@@ -117,7 +117,7 @@ export default function AccountSettingsTab({
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success("Toate setările au fost salvate cu succes");
-    } catch (error) {
+    } catch {
       toast.error("Eroare la salvarea setărilor");
     } finally {
       setIsSaving(false);
@@ -180,7 +180,7 @@ export default function AccountSettingsTab({
               <CardContent className="space-y-4">
                 {user && <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-                      {user.avatarUrl ? <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" /> : <User className="w-8 h-8 text-muted-foreground" />}
+                      {user.avatarUrl ? <Image src={user.avatarUrl} alt={user.name} width={64} height={64} className="w-full h-full object-cover" /> : <User className="w-8 h-8 text-muted-foreground" />}
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-foreground">{user.name}</h3>
