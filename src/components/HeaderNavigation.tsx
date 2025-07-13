@@ -5,12 +5,15 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Car, Menu, X } from "lucide-react";
+import { Car, Menu, X, LayoutDashboard } from "lucide-react";
+import Link from "next/link";
+
 interface NavItem {
   id: string;
   label: string;
   href: string;
 }
+
 export interface HeaderNavigationProps {
   logoText?: string;
   onNavClick?: (sectionId: string) => void;
@@ -37,6 +40,7 @@ const navItems: NavItem[] = [{
   label: "Contact",
   href: "#contact"
 }];
+
 export default function HeaderNavigation({
   logoText = "Unde Parchez?",
   onNavClick,
@@ -45,22 +49,28 @@ export default function HeaderNavigation({
   onSignUpClick
 }: HeaderNavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const handleNavClick = (sectionId: string) => {
     onNavClick?.(sectionId);
     setMobileMenuOpen(false);
   };
+
   const handleLoginClick = () => {
     onLoginClick?.();
     console.log("Login clicked");
   };
+
   const handleSignUpClick = () => {
     onSignUpClick?.();
     console.log("Sign up clicked");
   };
+
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
-  return <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+
+  return (
+    <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" role="navigation" aria-label="Navigare principală">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -72,15 +82,31 @@ export default function HeaderNavigation({
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <ul className="flex items-center space-x-6" role="menubar">
-              {navItems.map(item => <li key={item.id} role="none">
-                  <button onClick={() => handleNavClick(item.id)} className={cn("text-sm font-medium transition-colors hover:text-primary focus:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-sm px-2 py-1", activeSection === item.id ? "text-primary" : "text-muted-foreground")} role="menuitem" aria-label={`Navighează la secțiunea ${item.label}`}>
+              {navItems.map(item => (
+                <li key={item.id} role="none">
+                  <button 
+                    onClick={() => handleNavClick(item.id)} 
+                    className={cn(
+                      "text-sm font-medium transition-colors hover:text-primary focus:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-sm px-2 py-1",
+                      activeSection === item.id ? "text-primary" : "text-muted-foreground"
+                    )} 
+                    role="menuitem" 
+                    aria-label={`Navighează la secțiunea ${item.label}`}
+                  >
                     {item.label}
                   </button>
-                </li>)}
+                </li>
+              ))}
             </ul>
 
             {/* Auth Buttons */}
             <div className="flex items-center space-x-3">
+              <Link href="/dashboard">
+                <Button variant="outline" size="sm" className="text-sm font-medium flex items-center gap-2" aria-label="Accesează dashboard-ul">
+                  <LayoutDashboard size={16} />
+                  Dashboard
+                </Button>
+              </Link>
               <Button variant="ghost" size="sm" onClick={handleLoginClick} className="text-sm font-medium" aria-label="Autentificare în cont">
                 Autentificare
               </Button>
@@ -100,29 +126,53 @@ export default function HeaderNavigation({
 
         {/* Mobile Navigation Menu */}
         <AnimatePresence>
-          {mobileMenuOpen && <motion.div id="mobile-menu" initial={{
-          opacity: 0,
-          height: 0
-        }} animate={{
-          opacity: 1,
-          height: "auto"
-        }} exit={{
-          opacity: 0,
-          height: 0
-        }} transition={{
-          duration: 0.2
-        }} className="md:hidden border-t bg-background">
+          {mobileMenuOpen && (
+            <motion.div 
+              id="mobile-menu" 
+              initial={{
+                opacity: 0,
+                height: 0
+              }} 
+              animate={{
+                opacity: 1,
+                height: "auto"
+              }} 
+              exit={{
+                opacity: 0,
+                height: 0
+              }} 
+              transition={{
+                duration: 0.2
+              }} 
+              className="md:hidden border-t bg-background"
+            >
               <div className="px-2 pt-2 pb-3 space-y-1">
                 <ul className="space-y-1" role="menu">
-                  {navItems.map(item => <li key={item.id} role="none">
-                      <button onClick={() => handleNavClick(item.id)} className={cn("block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors hover:bg-muted focus:bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2", activeSection === item.id ? "text-primary bg-primary/10" : "text-muted-foreground")} role="menuitem" aria-label={`Navighează la secțiunea ${item.label}`}>
+                  {navItems.map(item => (
+                    <li key={item.id} role="none">
+                      <button 
+                        onClick={() => handleNavClick(item.id)} 
+                        className={cn(
+                          "block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors hover:bg-muted focus:bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                          activeSection === item.id ? "text-primary bg-primary/10" : "text-muted-foreground"
+                        )} 
+                        role="menuitem" 
+                        aria-label={`Navighează la secțiunea ${item.label}`}
+                      >
                         {item.label}
                       </button>
-                    </li>)}
+                    </li>
+                  ))}
                 </ul>
 
                 {/* Mobile Auth Buttons */}
                 <div className="pt-4 border-t space-y-2">
+                  <Link href="/dashboard" className="block">
+                    <Button variant="outline" size="sm" className="w-full justify-start text-left flex items-center gap-2" aria-label="Accesează dashboard-ul">
+                      <LayoutDashboard size={16} />
+                      Dashboard
+                    </Button>
+                  </Link>
                   <Button variant="ghost" size="sm" onClick={handleLoginClick} className="w-full justify-start text-left" aria-label="Autentificare în cont">
                     Autentificare
                   </Button>
@@ -131,8 +181,10 @@ export default function HeaderNavigation({
                   </Button>
                 </div>
               </div>
-            </motion.div>}
+            </motion.div>
+          )}
         </AnimatePresence>
       </nav>
-    </header>;
+    </header>
+  );
 }

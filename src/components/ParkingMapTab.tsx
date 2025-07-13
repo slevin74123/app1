@@ -46,8 +46,7 @@ export default function ParkingMapTab({
           setIsLocating(false);
           toast.success("Locația a fost detectată cu succes!");
         },
-        (error) => {
-          console.error("Error getting location:", error);
+        () => {
           setIsLocating(false);
           toast.error("Nu s-a putut detecta locația. Verificați permisiunile.");
         }

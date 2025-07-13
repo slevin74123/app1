@@ -251,20 +251,17 @@ export default function ParkingMap({ className, userLocation, user }: ParkingMap
 
   // Debug function to check API key status
   const debugApiKey = useCallback(() => {
-    const apiKey = GOOGLE_MAPS_API_KEY;
+    const apiKey: string = GOOGLE_MAPS_API_KEY || "";
     console.log('🔍 Google Maps API Key Debug Info:');
     console.log('API Key:', apiKey);
     console.log('API Key length:', apiKey.length);
     console.log('API Key starts with "AIza":', apiKey.startsWith('AIza'));
     if (!apiKey) {
       setApiKeyStatus('missing');
-      console.error('❌ Google Maps API Key is missing!');
     } else if (!apiKey.startsWith('AIza')) {
       setApiKeyStatus('invalid');
-      console.error('❌ Google Maps API Key format appears invalid!');
     } else {
       setApiKeyStatus('valid');
-      console.log('✅ Google Maps API Key appears to be valid');
     }
   }, []);
 
@@ -321,12 +318,12 @@ export default function ParkingMap({ className, userLocation, user }: ParkingMap
         if (errorMessage.includes('InvalidKeyMapError') || errorMessage.includes('InvalidKey')) {
           setMapError('Google Maps API key is invalid. Please check your API key configuration.');
           setApiKeyStatus('invalid');
-          console.error('🔑 INVALID API KEY ERROR DETECTED');
-          console.error('This usually means:');
-          console.error('1. The API key is incorrect or malformed');
-          console.error('2. The API key is not enabled for Maps JavaScript API');
-          console.error('3. The API key has billing issues');
-          console.error('4. The API key has domain restrictions that don\'t include your domain');
+          console.log('🔑 INVALID API KEY ERROR DETECTED');
+          console.log('This usually means:');
+          console.log('1. The API key is incorrect or malformed');
+          console.log('2. The API key is not enabled for Maps JavaScript API');
+          console.log('3. The API key has billing issues');
+          console.log('4. The API key has domain restrictions that don\'t include your domain');
         } else if (errorMessage.includes('QuotaExceededError')) {
           setMapError('Google Maps API quota exceeded. Please check your billing status.');
         } else if (errorMessage.includes('RequestDeniedError')) {
