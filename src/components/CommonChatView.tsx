@@ -200,7 +200,7 @@ export default function CommonChatView({
                   {/* Reactions */}
                   {msg.reactions.length > 0 && <div className="flex items-center gap-1 mt-1">
                       <div className="flex items-center gap-1 bg-muted/50 rounded-full px-2 py-1">
-                        {msg.reactions.map((reaction, index) => <span key={index} className="text-xs">{reaction}</span>)}
+                        {msg.reactions.map((reaction: string, index: number) => <span key={index} className="text-xs">{reaction}</span>)}
                         <span className="text-xs text-muted-foreground ml-1">
                           {msg.reactionCount}
                         </span>

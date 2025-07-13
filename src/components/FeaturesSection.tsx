@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Map, Users, CheckCircle } from "lucide-react";
@@ -57,17 +57,17 @@ export default function FeaturesSection({
         duration: 0.6
       }} viewport={{
         once: true
-      }} className="text-center mb-16">
-          <h2 className="text-3xl lg:text-5xl font-bold mb-6">
+      }} className="text-center mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold mb-4 sm:mb-6">
             {title}
           </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto">
             {subtitle}
           </p>
         </motion.div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {features.map((feature, index) => <motion.div key={feature.id} initial={{
           opacity: 0,
           y: 20
@@ -80,22 +80,22 @@ export default function FeaturesSection({
         }} viewport={{
           once: true
         }}>
-              <Card className="h-full p-6 hover:shadow-lg transition-all duration-300 hover:scale-105 border-2 hover:border-primary/20 group">
-                <CardHeader className="text-center pb-4">
-                  <div className="relative mx-auto mb-4">
-                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <feature.icon className="h-8 w-8 text-primary" aria-hidden="true" />
+              <Card className="h-full p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:scale-105 border-2 hover:border-primary/20 group">
+                <CardHeader className="text-center pb-3 sm:pb-4">
+                  <div className="relative mx-auto mb-3 sm:mb-4">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <feature.icon className="h-6 w-6 sm:h-8 sm:w-8 text-primary" aria-hidden="true" />
                     </div>
-                    {feature.badge && <Badge variant="secondary" className="absolute -top-2 -right-2 text-xs">
+                    {feature.badge && <Badge variant="secondary" className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 text-xs">
                         {feature.badge}
                       </Badge>}
                   </div>
-                  <CardTitle className="text-xl font-bold mb-2">
+                  <CardTitle className="text-lg sm:text-xl font-bold mb-2">
                     {feature.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                     {feature.description}
                   </p>
                 </CardContent>
@@ -115,12 +115,12 @@ export default function FeaturesSection({
         delay: 0.4
       }} viewport={{
         once: true
-      }} className="text-center mt-16">
-          <div className="bg-primary/5 rounded-2xl p-8 max-w-4xl mx-auto">
-            <h3 className="text-2xl font-bold mb-4">
+      }} className="text-center mt-12 sm:mt-16">
+          <div className="bg-primary/5 rounded-xl sm:rounded-2xl p-6 sm:p-8 max-w-4xl mx-auto">
+            <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">
               De ce să alegi Unde Parchez?
             </h3>
-            <p className="text-muted-foreground text-lg leading-relaxed">
+            <p className="text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed">
               Suntem prima aplicație din România care combină tehnologia cu puterea comunității pentru a rezolva 
               problema parcării urbane. Fiecare utilizator contribuie la un sistem mai inteligent și mai eficient.
             </p>
