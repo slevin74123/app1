@@ -5,7 +5,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Car, Menu, X, LayoutDashboard, LogOut, User } from "lucide-react";
+import { Car, Menu, X, LayoutDashboard, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthModal } from "./AuthModal";
@@ -83,17 +83,17 @@ export default function HeaderNavigation({
   return (
     <>
       <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" role="navigation" aria-label="Navigare principală">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-2">
-              <Car className="h-8 w-8 text-primary" aria-hidden="true" />
-              <span className="text-xl font-bold text-foreground">{logoText}</span>
-            </div>
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" role="navigation" aria-label="Navigare principală">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex items-center space-x-2">
+            <Car className="h-8 w-8 text-primary" aria-hidden="true" />
+            <span className="text-xl font-bold text-foreground">{logoText}</span>
+          </div>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <ul className="flex items-center space-x-6" role="menubar">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            <ul className="flex items-center space-x-6" role="menubar">
                 {navItems.map(item => (
                   <li key={item.id} role="none">
                     <button 
@@ -105,14 +105,14 @@ export default function HeaderNavigation({
                       role="menuitem" 
                       aria-label={`Navighează la secțiunea ${item.label}`}
                     >
-                      {item.label}
-                    </button>
+                    {item.label}
+                  </button>
                   </li>
                 ))}
-              </ul>
+            </ul>
 
-              {/* Auth Buttons */}
-              <div className="flex items-center space-x-3">
+            {/* Auth Buttons */}
+            <div className="flex items-center space-x-3">
                 <Link href="/dashboard">
                   <Button variant="outline" size="sm" className="text-sm font-medium flex items-center gap-2" aria-label="Accesează dashboard-ul">
                     <LayoutDashboard size={16} />
@@ -142,49 +142,49 @@ export default function HeaderNavigation({
                   </div>
                 ) : (
                   <>
-                    <Button variant="ghost" size="sm" onClick={handleLoginClick} className="text-sm font-medium" aria-label="Autentificare în cont">
-                      Autentificare
-                    </Button>
-                    <Button size="sm" onClick={handleSignUpClick} className="text-sm font-medium rounded-full px-6" aria-label="Înregistrare cont nou">
-                      Înregistrare
-                    </Button>
+              <Button variant="ghost" size="sm" onClick={handleLoginClick} className="text-sm font-medium" aria-label="Autentificare în cont">
+                Autentificare
+              </Button>
+              <Button size="sm" onClick={handleSignUpClick} className="text-sm font-medium rounded-full px-6" aria-label="Înregistrare cont nou">
+                Înregistrare
+              </Button>
                   </>
                 )}
-              </div>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <div className="md:hidden">
-              <Button variant="ghost" size="sm" onClick={toggleMobileMenu} className="p-2" aria-label={mobileMenuOpen ? "Închide meniul" : "Deschide meniul"} aria-expanded={mobileMenuOpen} aria-controls="mobile-menu">
-                {mobileMenuOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
-              </Button>
             </div>
           </div>
 
-          {/* Mobile Navigation Menu */}
-          <AnimatePresence>
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <Button variant="ghost" size="sm" onClick={toggleMobileMenu} className="p-2" aria-label={mobileMenuOpen ? "Închide meniul" : "Deschide meniul"} aria-expanded={mobileMenuOpen} aria-controls="mobile-menu">
+              {mobileMenuOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Menu */}
+        <AnimatePresence>
             {mobileMenuOpen && (
               <motion.div 
                 id="mobile-menu" 
                 initial={{
-                  opacity: 0,
-                  height: 0
+          opacity: 0,
+          height: 0
                 }} 
                 animate={{
-                  opacity: 1,
-                  height: "auto"
+          opacity: 1,
+          height: "auto"
                 }} 
                 exit={{
-                  opacity: 0,
-                  height: 0
+          opacity: 0,
+          height: 0
                 }} 
                 transition={{
-                  duration: 0.2
+          duration: 0.2
                 }} 
                 className="md:hidden border-t bg-background"
               >
-                <div className="px-2 pt-2 pb-3 space-y-1">
-                  <ul className="space-y-1" role="menu">
+              <div className="px-2 pt-2 pb-3 space-y-1">
+                <ul className="space-y-1" role="menu">
                     {navItems.map(item => (
                       <li key={item.id} role="none">
                         <button 
@@ -196,14 +196,14 @@ export default function HeaderNavigation({
                           role="menuitem" 
                           aria-label={`Navighează la secțiunea ${item.label}`}
                         >
-                          {item.label}
-                        </button>
+                        {item.label}
+                      </button>
                       </li>
                     ))}
-                  </ul>
+                </ul>
 
-                  {/* Mobile Auth Buttons */}
-                  <div className="pt-4 border-t space-y-2">
+                {/* Mobile Auth Buttons */}
+                <div className="pt-4 border-t space-y-2">
                     <Link href="/dashboard" className="block">
                       <Button variant="outline" size="sm" className="w-full justify-start text-left flex items-center gap-2" aria-label="Accesează dashboard-ul">
                         <LayoutDashboard size={16} />
@@ -233,20 +233,20 @@ export default function HeaderNavigation({
                       </div>
                     ) : (
                       <>
-                        <Button variant="ghost" size="sm" onClick={handleLoginClick} className="w-full justify-start text-left" aria-label="Autentificare în cont">
-                          Autentificare
-                        </Button>
-                        <Button size="sm" onClick={handleSignUpClick} className="w-full rounded-full" aria-label="Înregistrare cont nou">
-                          Înregistrare
-                        </Button>
+                  <Button variant="ghost" size="sm" onClick={handleLoginClick} className="w-full justify-start text-left" aria-label="Autentificare în cont">
+                    Autentificare
+                  </Button>
+                  <Button size="sm" onClick={handleSignUpClick} className="w-full rounded-full" aria-label="Înregistrare cont nou">
+                    Înregistrare
+                  </Button>
                       </>
                     )}
                   </div>
                 </div>
               </motion.div>
             )}
-          </AnimatePresence>
-        </nav>
+        </AnimatePresence>
+      </nav>
       </header>
 
       {/* Auth Modal */}

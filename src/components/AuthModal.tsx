@@ -37,7 +37,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     signInWithEmail 
   } = useAuth();
 
-  const handleSocialAuth = async (method: string, authFunction: () => Promise<{ error: any }>) => {
+  type AuthError = { message: string } | null;
+
+  const handleSocialAuth = async (method: string, authFunction: () => Promise<{ error: AuthError }>) => {
     setIsLoading(true);
     setAuthMethod(method);
     

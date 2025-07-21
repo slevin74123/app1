@@ -264,7 +264,7 @@ const ParkingList: React.FC<ParkingListProps> = ({
           </div>}
         
         {searchQuery && <p className="text-sm text-muted-foreground">
-            Rezultate pentru "{searchQuery}"
+            Rezultate pentru &quot;{searchQuery}&quot;
           </p>}
       </div>
 

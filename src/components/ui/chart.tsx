@@ -124,14 +124,14 @@ function ChartTooltipContent({
   label?: string | number;
   className?: string;
   indicator?: 'line' | 'dot' | 'dashed';
-  hideLabel?: boolean;
-  hideIndicator?: boolean;
+    hideLabel?: boolean;
+    hideIndicator?: boolean;
   labelFormatter?: (value: unknown, payload: TooltipPayload[]) => React.ReactNode;
   labelClassName?: string;
   formatter?: (value: unknown, name: string, item: TooltipPayload, index: number, payload: Record<string, unknown>) => React.ReactNode;
   color?: string;
-  nameKey?: string;
-  labelKey?: string;
+    nameKey?: string;
+    labelKey?: string;
 } & React.ComponentProps<'div'>) {
   const { config } = useChart();
 
@@ -256,9 +256,9 @@ function ChartLegendContent({
 }: React.ComponentProps<'div'> & {
   payload?: TooltipPayload[];
   verticalAlign?: string;
-  hideIcon?: boolean;
-  nameKey?: string;
-}) {
+    hideIcon?: boolean;
+    nameKey?: string;
+  }) {
   const { config } = useChart();
 
   if (!payload?.length) {

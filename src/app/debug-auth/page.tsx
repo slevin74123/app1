@@ -7,8 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 
 export default function DebugAuthPage() {
-  const { user, signInWithGoogle, signInWithFacebook, signInWithInstagram } = useAuth();
-  const [debugInfo, setDebugInfo] = useState<any>({});
+  const { user } = useAuth();
+  interface DebugInfo {
+    provider?: string;
+    success?: boolean;
+    data?: unknown;
+    error?: {
+      message: string;
+      status?: string | number;
+      name?: string;
+    } | null;
+    timestamp?: string;
+    type?: string;
+    session?: string;
+    user?: string;
+    supabase_url?: string;
+  }
+  const [debugInfo, setDebugInfo] = useState<DebugInfo>({});
   const [loading, setLoading] = useState(false);
 
   const testGoogleAuth = async () => {
@@ -19,7 +34,7 @@ export default function DebugAuthPage() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : '',
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -64,7 +79,7 @@ export default function DebugAuthPage() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : ''
         }
       });
 
@@ -112,7 +127,7 @@ export default function DebugAuthPage() {
     } catch (error) {
       setDebugInfo({
         type: 'config_check',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? { message: error.message } : { message: 'Unknown error' },
         timestamp: new Date().toISOString()
       });
     }
@@ -200,7 +215,7 @@ export default function DebugAuthPage() {
           <CardContent>
             <div className="space-y-2 text-sm">
               <p><strong>Supabase URL:</strong> zugwcilkqqkyzloekddp.supabase.co</p>
-              <p><strong>Redirect URL:</strong> {window.location.origin}/dashboard</p>
+              <p><strong>Redirect URL:</strong> {typeof window !== 'undefined' ? window.location.origin + '/dashboard' : ''}</p>
               <p><strong>Provider Google:</strong> Trebuie activat în Supabase Dashboard</p>
               <p><strong>Provider Facebook:</strong> Trebuie activat în Supabase Dashboard</p>
             </div>
@@ -214,7 +229,7 @@ export default function DebugAuthPage() {
           </CardHeader>
           <CardContent>
             <ol className="list-decimal list-inside space-y-2 text-sm">
-              <li>Mergi la Supabase Dashboard > Authentication > Providers</li>
+              <li>Mergi la Supabase Dashboard &gt; Authentication &gt; Providers</li>
               <li>Activează Google și Facebook</li>
               <li>Configurează credențialele OAuth în Google Cloud Console</li>
               <li>Adaugă credențialele în Supabase</li>

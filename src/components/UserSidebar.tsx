@@ -1,8 +1,37 @@
 import React, { useState } from 'react';
 import { Car, Bell, Heart, History, User, Settings, MapPin, Clock, Users, MessageCircle } from 'lucide-react';
+
+interface UserMenuItem {
+  icon: React.ElementType;
+  label: string;
+  description: string;
+  count: number | null;
+  color: string;
+  hasSubmenu?: boolean;
+  submenu?: { label: string; description: string; icon: React.ElementType }[];
+}
+
+interface QuickStat {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+}
+
+interface CommunityMessage {
+  id: number;
+  user: {
+    name: string;
+    avatar: string;
+    initials: string;
+  };
+  message: string;
+  timestamp: string;
+  location: string;
+}
+
 const UserSidebar: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const userMenuItems = [{
+  const userMenuItems: UserMenuItem[] = [{
     icon: Car,
     label: 'Parcările Mele',
     description: 'Vezi locurile tale rezervate',
@@ -44,8 +73,8 @@ const UserSidebar: React.FC = () => {
       description: 'Vezi locurile din zona ta',
       icon: MapPin
     }]
-  }] as any[];
-  const quickStats = [{
+  }];
+  const quickStats: QuickStat[] = [{
     label: 'Ore Parcat',
     value: '24.5',
     icon: Clock
@@ -57,10 +86,10 @@ const UserSidebar: React.FC = () => {
     label: 'Locuri Folosite',
     value: '18',
     icon: MapPin
-  }] as any[];
+  }];
 
   // Mock community messages data
-  const communityMessages = [{
+  const communityMessages: CommunityMessage[] = [{
     id: 1,
     user: {
       name: 'Maria Ionescu',
@@ -120,7 +149,7 @@ const UserSidebar: React.FC = () => {
     message: 'Locuri libere în parcarea de la Teatrul Național! Prețuri rezonabile și foarte aproape de centru.',
     timestamp: '1 zi',
     location: 'Teatrul Național'
-  }] as any[];
+  }];
   return <div className="h-full flex flex-col bg-card">
       {/* User Profile Section */}
       <div className="p-6 border-b border-border">

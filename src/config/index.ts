@@ -1,5 +1,8 @@
 // Export toate configurațiile din directorul config
 
+import { SUPABASE_CONFIG } from './supabase';
+import { API_CONFIG } from './api';
+
 // Configurarea Supabase
 export * from './supabase';
 
@@ -15,10 +18,10 @@ export * from './app';
 // Funcție pentru a obține toate configurațiile
 export const getAllConfigs = () => {
   return {
-    supabase: require('./supabase'),
-    api: require('./api'),
-    maps: require('./maps'),
-    app: require('./app')
+    supabase: import('./supabase'),
+    api: import('./api'),
+    maps: import('./maps'),
+    app: import('./app')
   };
 };
 
@@ -27,7 +30,7 @@ export const validateConfigs = () => {
   const errors: string[] = [];
   
   // Verifică configurarea Supabase
-  const supabaseConfig = require('./supabase').SUPABASE_CONFIG;
+  const supabaseConfig = SUPABASE_CONFIG;
   if (!supabaseConfig.URL || supabaseConfig.URL === 'https://your-project.supabase.co') {
     errors.push('Supabase URL nu este configurat');
   }
@@ -36,7 +39,7 @@ export const validateConfigs = () => {
   }
   
   // Verifică configurarea Google Maps
-  const mapsConfig = require('./api').API_CONFIG.GOOGLE_MAPS;
+  const mapsConfig = API_CONFIG.GOOGLE_MAPS;
   if (!mapsConfig.API_KEY || mapsConfig.API_KEY === 'your-google-maps-api-key') {
     errors.push('Google Maps API Key nu este configurat');
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Car, Clock, MapPin, Calendar, CreditCard, TrendingUp, BarChart3, Activity } from 'lucide-react';
+import { Car, Clock, MapPin, CreditCard, TrendingUp, BarChart3, Activity } from 'lucide-react';
 export interface MyParkingsViewProps {
   className?: string;
 }
@@ -35,7 +35,16 @@ export default function MyParkingsView({
     startTime: "10:00",
     endTime: "13:00",
     type: "Parcare Mall"
-  }] as any[];
+  }] as {
+    id: number;
+    location: string;
+    status: string;
+    timeRemaining: string;
+    cost: string;
+    startTime: string;
+    endTime: string;
+    type: string;
+  }[];
   const monthlyStats = {
     totalHours: 45.5,
     totalCost: 234,

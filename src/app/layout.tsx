@@ -25,12 +25,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ro">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="en" className="h-full">
+      <body className={geistSans.variable + ' ' + geistMono.variable + ' h-full antialiased'}>
         <AuthProvider>
-          {children}
+        {children}
           <Toaster position="top-right" />
         </AuthProvider>
       </body>

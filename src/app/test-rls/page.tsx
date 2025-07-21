@@ -1,19 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+type RLSTestResults = {
+  publicRead?: { success: boolean; data: unknown; error?: string };
+  userProfileRead?: { success: boolean; data: unknown; error?: string };
+  insertTest?: { success: boolean; data: unknown; error?: string };
+  generalError?: unknown;
+};
+
 export default function TestRLSPage() {
-  const { user, signInWithGoogle, signOut } = useAuth();
-  const [testResults, setTestResults] = useState<any>({});
+  const { user, signInWithGoogle } = useAuth();
+  const [testResults, setTestResults] = useState<RLSTestResults>({});
   const [loading, setLoading] = useState(false);
 
   const runRLSTests = async () => {
     setLoading(true);
-    const results: any = {};
+    const results: RLSTestResults = {};
 
     try {
       // Test 1: Încercare de citire fără autentificare

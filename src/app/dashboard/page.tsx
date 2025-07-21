@@ -11,25 +11,18 @@ import CommonChatView from '@/components/CommonChatView';
 import CommunityWallView from '@/components/CommunityWallView';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 
+const defaultFilters = {
+  priceRange: [0, 50] as [number, number],
+  availability: 'all',
+  type: 'all'
+};
+
 const DashboardPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedFilters, setSelectedFilters] = useState<{
-    priceRange: [number, number];
-    availability: string;
-    type: string;
-  }>({
-    priceRange: [0, 50],
-    availability: 'all',
-    type: 'all'
-  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showMyParkings, setShowMyParkings] = useState(false);
-  const [showCommonChat, setShowCommonChat] = useState(false);
-  const [showCommunityWall, setShowCommunityWall] = useState(false);
-  const [showNearbyParking, setShowNearbyParking] = useState(false);
   const [activeView, setActiveView] = useState<'map' | 'list' | 'my-parkings' | 'chat' | 'community'>('map');
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,39 +51,26 @@ const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     const handleShowMyParkings = (event: CustomEvent) => {
-      setShowMyParkings(event.detail.show);
       if (event.detail.show) {
         setActiveView('my-parkings');
-        setShowCommonChat(false);
-        setShowCommunityWall(false);
       }
     };
 
     const handleShowCommonChat = (event: CustomEvent) => {
-      setShowCommonChat(event.detail.show);
       if (event.detail.show) {
         setActiveView('chat');
-        setShowMyParkings(false);
-        setShowCommunityWall(false);
       }
     };
 
     const handleShowCommunityWall = (event: CustomEvent) => {
-      setShowCommunityWall(event.detail.show);
       if (event.detail.show) {
         setActiveView('community');
-        setShowMyParkings(false);
-        setShowCommonChat(false);
       }
     };
 
     const handleShowNearbyParking = (event: CustomEvent) => {
-      setShowNearbyParking(event.detail.show);
       if (event.detail.show) {
         setActiveView('list');
-        setShowMyParkings(false);
-        setShowCommonChat(false);
-        setShowCommunityWall(false);
       }
     };
 
@@ -110,9 +90,9 @@ const DashboardPage: React.FC = () => {
   const renderMainContent = () => {
     switch (activeView) {
       case 'map':
-        return <MapWithParkingPins searchQuery={searchQuery} filters={selectedFilters} />;
+        return <MapWithParkingPins searchQuery={searchQuery} filters={defaultFilters} />;
       case 'list':
-        return <ParkingList searchQuery={searchQuery} filters={selectedFilters} showNearbyOnly={showNearbyParking} />;
+        return <ParkingList searchQuery={searchQuery} filters={defaultFilters} />;
       case 'my-parkings':
         return <MyParkingsView />;
       case 'chat':
@@ -120,7 +100,7 @@ const DashboardPage: React.FC = () => {
       case 'community':
         return <CommunityWallView />;
       default:
-        return <MapWithParkingPins searchQuery={searchQuery} filters={selectedFilters} />;
+        return <MapWithParkingPins searchQuery={searchQuery} filters={defaultFilters} />;
     }
   };
 
@@ -262,7 +242,7 @@ const DashboardPage: React.FC = () => {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 overflow-hidden">
+          <main className="flex-1 overflow-hidden h-full">
             {renderMainContent()}
           </main>
         </div>

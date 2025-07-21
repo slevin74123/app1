@@ -1,7 +1,28 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, MapPin, Clock, Users, Smile, Paperclip, MoreVertical } from 'lucide-react';
+import { Send, MapPin, Users, Smile, Paperclip, MoreVertical } from 'lucide-react';
+// Definește tipul pentru chatMessages și onlineUsers
+interface ChatMessage {
+  id: number;
+  user: {
+    name: string;
+    avatar: string;
+    initials: string;
+    isOnline: boolean;
+  };
+  message: string;
+  timestamp: string;
+  location: string | null;
+  isOwn: boolean;
+  reactions: string[];
+  reactionCount: number;
+}
+interface OnlineUser {
+  name: string;
+  initials: string;
+  status: string;
+}
 export interface CommonChatViewProps {
   className?: string;
 }
@@ -9,7 +30,6 @@ export default function CommonChatView({
   className = ""
 }: CommonChatViewProps) {
   const [message, setMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
@@ -105,7 +125,7 @@ export default function CommonChatView({
     isOwn: false,
     reactions: ['⚠️', '👍'],
     reactionCount: 12
-  }] as any[];
+  }] as ChatMessage[];
   const onlineUsers = [{
     name: 'Maria Ionescu',
     initials: 'MI',
@@ -126,7 +146,7 @@ export default function CommonChatView({
     name: 'Cristian Marin',
     initials: 'CM',
     status: 'Activ acum'
-  }] as any[];
+  }] as OnlineUser[];
   const handleSendMessage = () => {
     if (message.trim()) {
       // Here you would typically send the message to your backend
@@ -209,22 +229,7 @@ export default function CommonChatView({
                 </div>
               </div>)}
             
-            {isTyping && <div className="flex gap-3">
-                <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse"></div>
-                </div>
-                <div className="bg-muted p-3 rounded-lg">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{
-                  animationDelay: '0.1s'
-                }}></div>
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{
-                  animationDelay: '0.2s'
-                }}></div>
-                  </div>
-                </div>
-              </div>}
+            {/* Elimină variabila nefolosită setIsTyping */}
             
             <div ref={messagesEndRef} />
           </div>

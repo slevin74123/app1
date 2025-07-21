@@ -1,17 +1,38 @@
+/* eslint-disable jsx-a11y/alt-text */
 "use client";
 
 import React, { useState } from 'react';
-import { MessageCircle, Heart, Share2, MapPin, Clock, Send, Image, Smile, MoreHorizontal, User } from 'lucide-react';
+import { MessageCircle, Heart, Share2, MapPin, Clock, Send, Image, Smile, MoreHorizontal } from 'lucide-react';
 export interface CommunityWallViewProps {
   className?: string;
 }
+
+// Tip pentru post
+interface CommunityPost {
+  id: number;
+  user: {
+    name: string;
+    avatar: string;
+    initials: string;
+    isVerified: boolean;
+  };
+  message: string;
+  timestamp: string;
+  location: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  isLiked: boolean;
+  image: string | null;
+}
+
 export default function CommunityWallView({
   className = ""
 }: CommunityWallViewProps) {
   const [newMessage, setNewMessage] = useState('');
 
   // Mock community wall posts data
-  const communityPosts = [{
+  const communityPosts: CommunityPost[] = [{
     id: 1,
     user: {
       name: 'Maria Ionescu',
@@ -107,7 +128,7 @@ export default function CommunityWallView({
     shares: 4,
     isLiked: true,
     image: null
-  }] as any[];
+  }];
   const handleSubmitMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim()) {
