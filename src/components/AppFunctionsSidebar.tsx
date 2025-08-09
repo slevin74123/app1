@@ -2,13 +2,28 @@ import React, { useState } from 'react';
 import { MapPin, MessageSquare, Search, Plus, AlertTriangle, Users, Clock, TrendingUp } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { ParkingAutocomplete } from './ParkingAutocomplete';
+
+interface ParkingSpotDB {
+  id: string;
+  nume: string;
+  adresa: string;
+  disponibilitate: boolean;
+  locuri_disponibile?: number;
+  locuri_indisponibile?: number;
+  locuri_total?: number;
+  pret_pe_ora?: number;
+  rating?: number;
+}
 
 const AppFunctionsSidebar: React.FC = () => {
   const [activeFunction, setActiveFunction] = useState<string | null>(null);
   // State pentru formularul de raportare
-  const [reportLocation, setReportLocation] = useState('');
-  const [reportDetails, setReportDetails] = useState('');
   const [reportLoading, setReportLoading] = useState(false);
+  
+  // State pentru formularul simplificat
+  const [selectedParking, setSelectedParking] = useState<ParkingSpotDB | null>(null);
+  const [parkingAvailability, setParkingAvailability] = useState(true);
 
   const mainFunctions = [{
     id: 'report',
@@ -80,33 +95,72 @@ const AppFunctionsSidebar: React.FC = () => {
     }
   };
 
-  // Functia de trimitere raport
-  const handleReportFreeSpot = async (e: React.FormEvent) => {
+  // Functia de actualizare status parcare
+  const handleUpdateParkingStatus = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reportLocation.trim()) {
-      toast.error('Te rugăm să introduci locația sau adresa!');
+    if (!selectedParking) {
+      toast.error('Te rugăm să selectezi o parcare!');
       return;
     }
     setReportLoading(true);
-    // Opțional: poți adăuga și lat/lng dacă ai geocodare sau selectezi pe hartă
-    const reportData: Record<string, any> = {
-      description: `Loc liber raportat: ${reportLocation}${reportDetails ? ' | Detalii: ' + reportDetails : ''}`,
-      status: 'free_spot',
-      created_at: new Date().toISOString()
-    };
-    // Dacă ai coordonate, adaugă-le aici (ex: reportData.lat = ..., reportData.lng = ...)
-    const { error, data } = await supabase.from('problems_reports').insert(reportData).select();
-    setReportLoading(false);
-    if (error) {
-      toast.error('Eroare la trimiterea raportului: ' + error.message);
-    } else {
-      toast.success('Mulțumim! Raportul a fost trimis către comunitate.');
-      setReportLocation('');
-      setReportDetails('');
-      // Emit eveniment custom pentru a adăuga pinul pe hartă
-      if (data && data[0]) {
-        window.dispatchEvent(new CustomEvent('free-spot-reported', { detail: data[0] }));
+
+    try {
+      // Actualizează statusul parcării existente cu toate câmpurile
+      const updateData: {
+        disponibilitate: boolean;
+        updated_at: string;
+        locuri_disponibile: number;
+        locuri_indisponibile: number;
+        locuri_total: number;
+      } = {
+        disponibilitate: parkingAvailability,
+        updated_at: new Date().toISOString(),
+        locuri_disponibile: 0,
+        locuri_indisponibile: 0,
+        locuri_total: 0
+      };
+
+      // Calculează numărul de locuri bazat pe status
+      const totalSpots = selectedParking.locuri_total || 5; // Folosește totalul existent sau 5 ca default
+      
+      if (parkingAvailability) {
+        // Parcarea devine disponibilă
+        updateData.locuri_disponibile = totalSpots;
+        updateData.locuri_indisponibile = 0;
+      } else {
+        // Parcarea devine indisponibilă
+        updateData.locuri_disponibile = 0;
+        updateData.locuri_indisponibile = totalSpots;
       }
+      
+      // Asigură-te că totalul este corect
+      updateData.locuri_total = totalSpots;
+
+      const { error, data } = await supabase
+        .from('parcari_raportate')
+        .update(updateData)
+        .eq('id', selectedParking.id)
+        .select();
+
+      setReportLoading(false);
+
+      if (error) {
+        toast.error('Eroare la actualizarea parcarei: ' + error.message);
+      } else {
+        toast.success(`Status actualizat! Parcarea este acum ${parkingAvailability ? 'disponibilă' : 'indisponibilă'}.`);
+        
+        // Reset form
+        setSelectedParking(null);
+        setParkingAvailability(true);
+        
+        // Emit eveniment custom pentru a actualiza harta
+        if (data && data[0]) {
+          window.dispatchEvent(new CustomEvent('parking-reported', { detail: data[0] }));
+        }
+      }
+    } catch (error) {
+      setReportLoading(false);
+      toast.error('Eroare neașteptată: ' + (error as Error).message);
     }
   };
 
@@ -134,29 +188,32 @@ const AppFunctionsSidebar: React.FC = () => {
 
             {/* Expanded Content */}
             {activeFunction === func.id && <div className="ml-4 p-3 bg-muted/30 rounded-lg border-l-2 border-primary">
-                {func.id === 'report' && <form className="space-y-3" onSubmit={handleReportFreeSpot}>
-                    <input
-                      type="text"
-                      placeholder="Introdu locația sau adresa"
-                      className="w-full px-3 py-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      value={reportLocation}
-                      onChange={e => setReportLocation(e.target.value)}
-                      disabled={reportLoading}
+                {func.id === 'report' && <form className="space-y-3" onSubmit={handleUpdateParkingStatus}>
+                    {/* Selectare parcare cu autocomplete din baza de date */}
+                    <ParkingAutocomplete
+                      onSelect={(parking) => setSelectedParking(parking)}
+                      placeholder="Caută o parcare existentă..."
+                      className="w-full"
                     />
-                    <textarea
-                      placeholder="Detalii suplimentare (opțional)"
-                      rows={2}
-                      className="w-full px-3 py-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                      value={reportDetails}
-                      onChange={e => setReportDetails(e.target.value)}
-                      disabled={reportLoading}
-                    />
+                    
+                    {/* Disponibilitate - deja bifată */}
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={parkingAvailability}
+                        onChange={e => setParkingAvailability(e.target.checked)}
+                        disabled={reportLoading}
+                        className="rounded"
+                      />
+                      Disponibil
+                    </label>
+                    
                     <button
                       type="submit"
                       className="w-full bg-green-600 text-white py-2 rounded text-sm hover:bg-green-700 transition-colors disabled:opacity-60"
                       disabled={reportLoading}
                     >
-                      {reportLoading ? 'Se trimite...' : 'Trimite Raport'}
+                      {reportLoading ? 'Se trimite...' : 'Actualizează Harta'}
                     </button>
                   </form>}
                 {func.id === 'inform' && <div className="space-y-3">

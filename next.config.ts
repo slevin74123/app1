@@ -1,15 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      // Exclude magicpath-project-2 from the build
-      'magicpath-project-2': false,
-    };
-    return config;
+  images: {
+    domains: ['images.unsplash.com', 'via.placeholder.com'],
   },
+  // Configurare pentru a evita problemele cu cache-ul
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  }
 };
 
 export default nextConfig;

@@ -34,6 +34,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground">Se încarcă...</p>
+          <p className="text-xs text-muted-foreground">Verificare conectivitate Supabase...</p>
         </div>
       </div>
     );
@@ -41,7 +42,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Pentru dezvoltare, afișează conținutul fără verificare
   if (allowUnauthenticatedAccess) {
-    return <>{children}</>;
+    return (
+      <>
+        {!user && (
+          <div className="fixed top-4 right-4 z-50 bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-md text-sm">
+            🛠️ Mod dezvoltare - Acces fără autentificare
+          </div>
+        )}
+        {children}
+      </>
+    );
   }
 
   // Verifică autentificarea doar dacă nu permitem accesul fără autentificare

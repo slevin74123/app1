@@ -5,7 +5,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Car, Menu, X, LayoutDashboard, LogOut } from "lucide-react";
+import { Car, Menu, X, LayoutDashboard, LogOut, Bell } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthModal } from "./AuthModal";
@@ -22,6 +22,7 @@ export interface HeaderNavigationProps {
   activeSection?: string;
   onLoginClick?: () => void;
   onSignUpClick?: () => void;
+  showNotifications?: boolean;
 }
 
 // Navigation menu items
@@ -48,7 +49,8 @@ export default function HeaderNavigation({
   onNavClick,
   activeSection = "home",
   onLoginClick,
-  onSignUpClick
+  onSignUpClick,
+  showNotifications = false,
 }: HeaderNavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -111,9 +113,15 @@ export default function HeaderNavigation({
                 ))}
             </ul>
 
-            {/* Auth Buttons */}
+            {/* Auth Buttons & Notifications */}
             <div className="flex items-center space-x-3">
-                <Link href="/dashboard">
+              {showNotifications && (
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell size={20} />
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                </Button>
+              )}
+              <Link href="/dashboard">
                   <Button variant="outline" size="sm" className="text-sm font-medium flex items-center gap-2" aria-label="Accesează dashboard-ul">
                     <LayoutDashboard size={16} />
                     Dashboard

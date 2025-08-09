@@ -1,0 +1,83 @@
+# Cursor Rules pentru Parking App cu MCP
+
+## 🤖 MCP Server Integration
+Această aplicație folosește un server MCP personalizat pentru:
+- Analiza datelor din Supabase
+- Optimizarea bazei de date
+- Testarea API-urilor
+- Generarea de rapoarte
+
+## 📋 Reguli de Dezvoltare
+
+### Structura Proiectului
+- `src/components/` - Componente React
+- `src/contexts/` - Context-uri pentru state management
+- `src/config/` - Configurări (Supabase, API-uri)
+- `mcp-server.js` - Server MCP personalizat
+
+### Convenții de Cod
+- Folosește TypeScript pentru toate fișierele noi
+- Componentele trebuie să fie funcționale cu hooks
+- Folosește async/await pentru operațiuni asincrone
+- Adaugă error handling pentru toate operațiunile cu baza de date
+
+### Integrare MCP
+Când lucrezi cu AI-ul în Cursor, poți folosi:
+
+1. **Analiza datelor**: "Analizează datele din tabela parcari_raportate"
+2. **Optimizare DB**: "Optimizează performanța bazei de date"
+3. **Testare API**: "Testează endpoint-urile API"
+4. **Rapoarte**: "Generează un raport despre utilizarea aplicației"
+
+### Supabase Best Practices
+- Folosește RLS (Row Level Security) pentru toate tabelele
+- Adaugă indexuri pentru câmpurile folosite în căutări
+- Validează datele pe client și server
+- Folosește transacții pentru operațiuni complexe
+
+### Google Maps Integration
+- Folosește API-ul de geocoding pentru conversia adreselor
+- Implementează caching pentru rezultatele de geocoding
+- Gestionează erorile de conectivitate grațios
+
+### Performance
+- Implementează lazy loading pentru componente mari
+- Folosește React.memo pentru componente care se re-renderizează des
+- Optimizează query-urile Supabase cu select-uri specifice
+- Implementează paginare pentru liste mari
+
+### Security
+- Validează toate input-urile utilizatorilor
+- Sanitizează datele înainte de a le salva în baza de date
+- Folosește HTTPS pentru toate comunicările
+- Implementează rate limiting pentru API-uri
+
+## 🚀 Comenzi Utile
+
+```bash
+# Pornește serverul MCP
+node mcp-server.js
+
+# Pornește aplicația în mod dezvoltare
+npm run dev
+
+# Build pentru producție
+npm run build
+
+# Testează aplicația
+npm run test
+```
+
+## 📊 Monitoring și Analytics
+Serverul MCP oferă:
+- Statistici despre parcările raportate
+- Analiza zonelor populare
+- Optimizări pentru baza de date
+- Testarea endpoint-urilor API
+
+## 🔧 Troubleshooting
+Dacă întâmpini probleme:
+1. Verifică conectivitatea la Supabase
+2. Testează serverul MCP cu `node mcp-server.js`
+3. Verifică log-urile din consolă
+4. Folosește tool-urile MCP pentru diagnosticare 

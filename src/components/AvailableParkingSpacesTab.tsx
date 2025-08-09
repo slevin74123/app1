@@ -98,6 +98,8 @@ export default function AvailableParkingSpacesTab({
   const [error, setError] = useState<string | null>(null);
   const [selectedParking, setSelectedParking] = useState<ParkingSpace | null>(null);
   const [showReserveDialog, setShowReserveDialog] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportedSpaces, setReportedSpaces] = useState<number | null>(null);
 
   // Simulate loading data
   useEffect(() => {
@@ -135,12 +137,17 @@ export default function AvailableParkingSpacesTab({
     }
   };
   const handleReportFree = (parking: ParkingSpace) => {
-    toast.success(`Mulțumim! Ați raportat că ${parking.name} are locuri libere`);
-    // Update the parking space data
-    setParkingSpaces(prev => prev.map(p => p.id === parking.id ? {
-      ...p,
-      lastUpdated: "Acum 1 minut"
-    } : p));
+    setSelectedParking(parking);
+    setShowReportDialog(true);
+  };
+
+  const confirmReport = () => {
+    if (selectedParking && reportedSpaces !== null) {
+      toast.success(`Mulțumim! Ați raportat că ${selectedParking.name} are ${reportedSpaces} locuri libere`);
+      setShowReportDialog(false);
+      setSelectedParking(null);
+      setReportedSpaces(null);
+    }
   };
   const renderStars = (rating: number) => {
     return Array.from({
@@ -400,6 +407,33 @@ export default function AvailableParkingSpacesTab({
                 </Button>
                 <Button onClick={confirmReservation}>
                   Confirmă rezervarea
+                </Button>
+              </div>
+            </div>}
+        </DialogContent>
+      </Dialog>
+
+      {/* Report Dialog */}
+      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Raportează locuri libere</DialogTitle>
+          </DialogHeader>
+          {selectedParking && <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <h4 className="font-medium text-foreground">{selectedParking.name}</h4>
+                <p className="text-sm text-muted-foreground">{selectedParking.address}</p>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="free-spaces" className="text-sm font-medium">Introduceți numărul de locuri libere:</label>
+                <input id="free-spaces" type="number" value={reportedSpaces ?? ''} onChange={(e) => setReportedSpaces(parseInt(e.target.value))} className="w-full p-2 border rounded-md" />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowReportDialog(false)}>
+                  Anulează
+                </Button>
+                <Button onClick={confirmReport}>
+                  Confirmă raportarea
                 </Button>
               </div>
             </div>}

@@ -1,5 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, Heart, MapPin, Clock, DollarSign, Navigation, Car, Zap } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+
+type ParkingSpotDB = {
+  id: string;
+  name?: string;
+  address?: string;
+  is_available?: boolean;
+};
+type ReportedParkingDB = {
+  id: number;
+  nume: string;
+  adresa: string;
+  pret_pe_ora: number;
+  rating: number;
+  numar_recenzii: number;
+  disponibilitate: boolean;
+  garaj: boolean;
+  acoperit: boolean;
+  securitate: boolean;
+  distanta_km: number;
+  timp_mers_minute: number;
+};
 interface ParkingSpot {
   id: string;
   name: string;
@@ -32,120 +54,81 @@ const ParkingList: React.FC<ParkingListProps> = ({
   const [favorites, setFavorites] = useState<Set<string>>(new Set(['2', '5', '8']));
   const [sortBy, setSortBy] = useState<'distance' | 'price' | 'rating'>('distance');
 
-  // Parcări din București
-  const parkingSpots: ParkingSpot[] = [{
-    id: '1',
-    name: 'Parcare Piața Victoriei',
-    address: 'Piața Victoriei nr. 1, București',
-    price: 8,
-    rating: 4.2,
-    reviews: 128,
-    availability: 'available',
-    type: 'garage',
-    distance: '0.3 km',
-    walkTime: '4 min',
-    image: '/api/placeholder/120/80',
-    features: ['Acoperit', 'Securitate', '24/7'],
-    isFavorite: false
-  }, {
-    id: '2',
-    name: 'Parcare Herastrau',
-    address: 'Șoseaua Nordului nr. 7-9, București',
-    price: 5,
-    rating: 4.5,
-    reviews: 89,
-    availability: 'available',
-    type: 'street',
-    distance: '0.8 km',
-    walkTime: '10 min',
-    image: '/api/placeholder/120/80',
-    features: ['La Nivel', 'Cu Plată'],
-    isFavorite: true
-  }, {
-    id: '3',
-    name: 'Garaj Centrul Vechi',
-    address: 'Strada Lipscani nr. 15, București',
-    price: 12,
-    rating: 4.0,
-    reviews: 156,
-    availability: 'reserved',
-    type: 'garage',
-    distance: '1.2 km',
-    walkTime: '15 min',
-    image: '/api/placeholder/120/80',
-    features: ['Aer Liber', 'Supraveghere'],
-    isFavorite: false
-  }, {
-    id: '4',
-    name: 'Parcare Romana',
-    address: 'Piața Romană nr. 6, București',
-    price: 10,
-    rating: 4.3,
-    reviews: 94,
-    availability: 'available',
-    type: 'garage',
-    distance: '0.9 km',
-    walkTime: '12 min',
-    image: '/api/placeholder/120/80',
-    features: ['Acoperit', 'Încărcare EV', 'Valet'],
-    isFavorite: true
-  }, {
-    id: '5',
-    name: 'Parcare Unirii',
-    address: 'Piața Unirii nr. 1, București',
-    price: 9,
-    rating: 4.1,
-    reviews: 67,
-    availability: 'available',
-    type: 'lot',
-    distance: '0.7 km',
-    walkTime: '9 min',
-    image: '/api/placeholder/120/80',
-    features: ['Aer Liber', 'Securitate'],
-    isFavorite: true
-  }, {
-    id: '6',
-    name: 'Garaj Cismigiu',
-    address: 'Bulevardul Regina Elisabeta nr. 38, București',
-    price: 11,
-    rating: 4.4,
-    reviews: 112,
-    availability: 'available',
-    type: 'garage',
-    distance: '0.6 km',
-    walkTime: '8 min',
-    image: '/api/placeholder/120/80',
-    features: ['Acoperit', 'Accesibil', '24/7'],
-    isFavorite: false
-  }, {
-    id: '7',
-    name: 'Parcare Obor',
-    address: 'Calea Obor nr. 10, București',
-    price: 7,
-    rating: 4.0,
-    reviews: 85,
-    availability: 'available',
-    type: 'street',
-    distance: '1.1 km',
-    walkTime: '14 min',
-    image: '/api/placeholder/120/80',
-    features: ['Stradal', 'Cu Plată'],
-    isFavorite: false
-  }, {
-    id: '8',
-    name: 'Parcare Floreasca',
-    address: 'Șoseaua Floreasca nr. 169A, București',
-    price: 8,
-    rating: 4.2,
-    reviews: 73,
-    availability: 'available',
-    type: 'garage',
-    distance: '1.3 km',
-    walkTime: '16 min',
-    image: '/api/placeholder/120/80',
-    features: ['Acoperit', 'Securitate', 'Încărcare EV'],
-    isFavorite: false
-  }];
+  // State pentru parcări
+  const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Încarcă parcările din baza de date
+  useEffect(() => {
+    async function fetchParkingSpots() {
+      setLoading(true);
+      try {
+        // Fetch din parking_spots (tabela originală)
+        const { data: parkingSpotsData, error: parkingSpotsError } = await supabase
+          .from('parking_spots')
+          .select('*');
+        
+        // Fetch din parcari_raportate (tabela nouă)
+        const { data: reportedParkingsData, error: reportedParkingsError } = await supabase
+          .from('parcari_raportate')
+          .select('*');
+        
+        if (parkingSpotsError || reportedParkingsError) {
+          console.error('Eroare la încărcarea parcărilor:', parkingSpotsError || reportedParkingsError);
+          setParkingSpots([]);
+        } else {
+          // Combină datele din ambele tabele
+          const allParkingSpots: ParkingSpot[] = [
+            // Convertește parking_spots la formatul așteptat
+            ...(parkingSpotsData || []).map((spot: ParkingSpotDB) => ({
+              id: spot.id,
+              name: spot.name || 'Parcare',
+              address: spot.address || 'Adresă necunoscută',
+              price: 8, // Preț default
+              rating: 4.0, // Rating default
+              reviews: 50, // Reviews default
+              availability: spot.is_available ? 'available' as const : 'occupied' as const,
+              type: 'street' as const,
+              distance: '0.5 km', // Distanță default
+              walkTime: '6 min', // Walk time default
+              image: '/api/placeholder/120/80',
+              features: ['La Nivel'],
+              isFavorite: false
+            })),
+            // Convertește parcari_raportate la formatul așteptat
+            ...(reportedParkingsData || []).map((parking: ReportedParkingDB) => ({
+              id: `reported-${parking.id}`,
+              name: parking.nume,
+              address: parking.adresa,
+              price: parking.pret_pe_ora,
+              rating: parking.rating,
+              reviews: parking.numar_recenzii,
+              availability: parking.disponibilitate ? 'available' as const : 'occupied' as const,
+              type: parking.garaj ? 'garage' as const : 'street' as const,
+              distance: `${parking.distanta_km} km`,
+              walkTime: `${parking.timp_mers_minute} min`,
+              image: '/api/placeholder/120/80',
+              features: [
+                ...(parking.garaj ? ['Garaj'] : []),
+                ...(parking.acoperit ? ['Acoperit'] : []),
+                ...(parking.securitate ? ['Securitate'] : [])
+              ],
+              isFavorite: false
+            }))
+          ];
+          
+          setParkingSpots(allParkingSpots);
+        }
+      } catch (error) {
+        console.error('Eroare la încărcarea parcărilor:', error);
+        setParkingSpots([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchParkingSpots();
+  }, []);
 
   // Filter and sort spots
   const filteredAndSortedSpots = parkingSpots.filter(spot => {
@@ -234,6 +217,24 @@ const ParkingList: React.FC<ParkingListProps> = ({
         return 'Necunoscut';
     }
   };
+  if (loading) {
+    return (
+      <div className="h-full flex flex-col bg-card">
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-foreground">Se încarcă parcările...</h2>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <p className="text-muted-foreground">Se încarcă parcările din baza de date...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return <div className="h-full flex flex-col bg-card">
       {/* Header */}
       <div className="p-4 border-b border-border">

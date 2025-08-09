@@ -1,9 +1,12 @@
 // Configurarea Supabase
 export const SUPABASE_CONFIG = {
   // URL-ul proiectului Supabase
+  // ⚠️ ATENȚIE: Acest proiect pare să nu mai existe sau să fie suspendat
+  // Trebuie să creezi un proiect nou pe https://supabase.com
   URL: 'https://zugwcilkqqkyzloekddp.supabase.co',
   
   // Cheia anonimă pentru client-side
+  // ⚠️ Această cheie nu va funcționa dacă proiectul nu există
   ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1Z3djaWxrcXFreXpsb2VrZGRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0MDA3NDEsImV4cCI6MjA2Nzk3Njc0MX0.M0Qmw4NaI-1DXacU2N_eTP3YEKKEw52hmSyCAudf_fw',
   
   // Configurare pentru autentificare

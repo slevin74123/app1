@@ -1,0 +1,494 @@
+{
+  "totalParkings": 36,
+  "zones": {
+    "Piața Victoriei": {
+      "descriere": "Centrul administrativ al României - Guvern, Parlament, Ministere",
+      "parcari": [
+        {
+          "nume": "Parcare Piața Victoriei",
+          "adresa": "Piața Victoriei, Sector 1",
+          "rating": 4.2,
+          "pret_pe_ora": 8,
+          "disponibilitate": true,
+          "facilitati": [
+            "Securitate 24/7",
+            "Video supraveghere",
+            "Acces ușor la metrou"
+          ]
+        },
+        {
+          "nume": "Parcare Guvern",
+          "adresa": "Strada Izvor, Sector 1",
+          "rating": 4.5,
+          "pret_pe_ora": 10,
+          "disponibilitate": true,
+          "facilitati": [
+            "Securitate",
+            "Acces controlat",
+            "Parcare subterană"
+          ]
+        },
+        {
+          "nume": "Parcare Parlament",
+          "adresa": "Calea 13 Septembrie, Sector 5",
+          "rating": 4,
+          "pret_pe_ora": 8,
+          "disponibilitate": true,
+          "facilitati": [
+            "Securitate",
+            "Acces la metrou"
+          ]
+        }
+      ]
+    },
+    "Piața Unirii": {
+      "descriere": "Centrul istoric și comercial - Mall-uri, restaurante, transport",
+      "parcari": [
+        {
+          "nume": "Parcare Unirea Shopping Center",
+          "adresa": "Piața Unirii, Sector 3",
+          "rating": 4.3,
+          "pret_pe_ora": 6,
+          "disponibilitate": true,
+          "facilitati": [
+            "Parcare subterană",
+            "Shopping center",
+            "Restaurante"
+          ]
+        },
+        {
+          "nume": "Parcare Vitan Mall",
+          "adresa": "Șoseaua Chitilei, Sector 3",
+          "rating": 4.1,
+          "pret_pe_ora": 5,
+          "disponibilitate": true,
+          "facilitati": [
+            "Mall",
+            "Cinema",
+            "Restaurante"
+          ]
+        },
+        {
+          "nume": "Parcare Piața Unirii",
+          "adresa": "Piața Unirii, Sector 3",
+          "rating": 3.8,
+          "pret_pe_ora": 4,
+          "disponibilitate": true,
+          "facilitati": [
+            "Acces la metrou",
+            "Centru comercial"
+          ]
+        }
+      ]
+    },
+    "Centrul Vechi": {
+      "descriere": "Zona istorică și de divertisment - restaurante, baruri, cluburi",
+      "parcari": [
+        {
+          "nume": "Parcare Centrul Vechi",
+          "adresa": "Strada Lipscani, Sector 3",
+          "rating": 4.4,
+          "pret_pe_ora": 7,
+          "disponibilitate": true,
+          "facilitati": [
+            "Zona istorică",
+            "Restaurante",
+            "Baruri"
+          ]
+        },
+        {
+          "nume": "Parcare Hanul cu Tei",
+          "adresa": "Strada Gabroveni, Sector 3",
+          "rating": 4,
+          "pret_pe_ora": 6,
+          "disponibilitate": true,
+          "facilitati": [
+            "Restaurante tradiționale",
+            "Zona turistică"
+          ]
+        },
+        {
+          "nume": "Parcare Cărturești Carusel",
+          "adresa": "Strada Lipscani, Sector 3",
+          "rating": 4.2,
+          "pret_pe_ora": 8,
+          "disponibilitate": true,
+          "facilitati": [
+            "Librărie",
+            "Cafenea",
+            "Zona culturală"
+          ]
+        }
+      ]
+    },
+    "Berceni": {
+      "descriere": "Zona rezidențială din sud - blocuri, parcuri, servicii",
+      "parcari": [
+        {
+          "nume": "Parcare Berceni",
+          "adresa": "Strada Berceni, Sector 4",
+          "rating": 3.9,
+          "pret_pe_ora": 3,
+          "disponibilitate": true,
+          "facilitati": [
+            "Zona rezidențială",
+            "Acces la metrou"
+          ]
+        },
+        {
+          "nume": "Parcare Parcul Tineretului",
+          "adresa": "Strada Olteniței, Sector 4",
+          "rating": 4.1,
+          "pret_pe_ora": 4,
+          "disponibilitate": true,
+          "facilitati": [
+            "Parc",
+            "Zona de agrement",
+            "Restaurante"
+          ]
+        },
+        {
+          "nume": "Parcare Berceni Shopping",
+          "adresa": "Strada Berceni, Sector 4",
+          "rating": 4,
+          "pret_pe_ora": 5,
+          "disponibilitate": true,
+          "facilitati": [
+            "Shopping center",
+            "Restaurante",
+            "Servicii"
+          ]
+        }
+      ]
+    },
+    "Drumul Taberei": {
+      "descriere": "Zona rezidențială din vest - blocuri, parcuri, servicii",
+      "parcari": [
+        {
+          "nume": "Parcare Drumul Taberei",
+          "adresa": "Strada Drumul Taberei, Sector 6",
+          "rating": 3.8,
+          "pret_pe_ora": 3,
+          "disponibilitate": true,
+          "facilitati": [
+            "Zona rezidențială",
+            "Acces la metrou"
+          ]
+        },
+        {
+          "nume": "Parcare Parcul Drumul Taberei",
+          "adresa": "Strada Drumul Taberei, Sector 6",
+          "rating": 4,
+          "pret_pe_ora": 4,
+          "disponibilitate": true,
+          "facilitati": [
+            "Parc",
+            "Zona de agrement",
+            "Restaurante"
+          ]
+        },
+        {
+          "nume": "Parcare Plaza Romania",
+          "adresa": "Strada Drumul Taberei, Sector 6",
+          "rating": 4.2,
+          "pret_pe_ora": 5,
+          "disponibilitate": true,
+          "facilitati": [
+            "Shopping center",
+            "Cinema",
+            "Restaurante"
+          ]
+        }
+      ]
+    },
+    "Băneasa": {
+      "descriere": "Zona rezidențială din nord - vile, parcuri, aeroport",
+      "parcari": [
+        {
+          "nume": "Parcare Băneasa",
+          "adresa": "Strada Băneasa, Sector 1",
+          "rating": 4.3,
+          "pret_pe_ora": 6,
+          "disponibilitate": true,
+          "facilitati": [
+            "Zona rezidențială",
+            "Aeroport Băneasa"
+          ]
+        },
+        {
+          "nume": "Parcare Parcul Băneasa",
+          "adresa": "Strada Băneasa, Sector 1",
+          "rating": 4.1,
+          "pret_pe_ora": 5,
+          "disponibilitate": true,
+          "facilitati": [
+            "Parc",
+            "Zona de agrement",
+            "Restaurante"
+          ]
+        },
+        {
+          "nume": "Parcare Băneasa Shopping City",
+          "adresa": "Strada Băneasa, Sector 1",
+          "rating": 4.4,
+          "pret_pe_ora": 6,
+          "disponibilitate": true,
+          "facilitati": [
+            "Shopping center",
+            "Cinema",
+            "Restaurante"
+          ]
+        }
+      ]
+    },
+    "Pantelimon": {
+      "descriere": "Zona rezidențială din est - blocuri, servicii, transport",
+      "parcari": [
+        {
+          "nume": "Parcare Pantelimon",
+          "adresa": "Strada Pantelimon, Sector 2",
+          "rating": 3.7,
+          "pret_pe_ora": 3,
+          "disponibilitate": true,
+          "facilitati": [
+            "Zona rezidențială",
+            "Acces la metrou"
+          ]
+        },
+        {
+          "nume": "Parcare Parcul Pantelimon",
+          "adresa": "Strada Pantelimon, Sector 2",
+          "rating": 3.9,
+          "pret_pe_ora": 4,
+          "disponibilitate": true,
+          "facilitati": [
+            "Parc",
+            "Zona de agrement",
+            "Restaurante"
+          ]
+        },
+        {
+          "nume": "Parcare Pantelimon Shopping",
+          "adresa": "Strada Pantelimon, Sector 2",
+          "rating": 4,
+          "pret_pe_ora": 5,
+          "disponibilitate": true,
+          "facilitati": [
+            "Shopping center",
+            "Restaurante",
+            "Servicii"
+          ]
+        }
+      ]
+    },
+    "Cotroceni": {
+      "descriere": "Zona rezidențială elegantă - palate, universități, parcuri",
+      "parcari": [
+        {
+          "nume": "Parcare Palatul Cotroceni",
+          "adresa": "Strada Geniului, Sector 6",
+          "rating": 4.5,
+          "pret_pe_ora": 8,
+          "disponibilitate": true,
+          "facilitati": [
+            "Palatul Președintelui",
+            "Securitate",
+            "Zona istorică"
+          ]
+        },
+        {
+          "nume": "Parcare Universitatea Politehnica",
+          "adresa": "Splaiul Independenței, Sector 6",
+          "rating": 4.2,
+          "pret_pe_ora": 6,
+          "disponibilitate": true,
+          "facilitati": [
+            "Universitate",
+            "Bibliotecă",
+            "Restaurante"
+          ]
+        },
+        {
+          "nume": "Parcare Parcul Cotroceni",
+          "adresa": "Strada Geniului, Sector 6",
+          "rating": 4.1,
+          "pret_pe_ora": 5,
+          "disponibilitate": true,
+          "facilitati": [
+            "Parc",
+            "Zona de agrement",
+            "Restaurante"
+          ]
+        }
+      ]
+    },
+    "Primăverii": {
+      "descriere": "Zona rezidențială de lux - vile, ambasade, parcuri",
+      "parcari": [
+        {
+          "nume": "Parcare Primăverii",
+          "adresa": "Strada Primăverii, Sector 1",
+          "rating": 4.6,
+          "pret_pe_ora": 10,
+          "disponibilitate": true,
+          "facilitati": [
+            "Zona de lux",
+            "Securitate",
+            "Ambasade"
+          ]
+        },
+        {
+          "nume": "Parcare Parcul Primăverii",
+          "adresa": "Strada Primăverii, Sector 1",
+          "rating": 4.3,
+          "pret_pe_ora": 8,
+          "disponibilitate": true,
+          "facilitati": [
+            "Parc",
+            "Zona de agrement",
+            "Restaurante elegante"
+          ]
+        },
+        {
+          "nume": "Parcare Ambasada SUA",
+          "adresa": "Strada Tudor Arghezi, Sector 1",
+          "rating": 4.4,
+          "pret_pe_ora": 9,
+          "disponibilitate": true,
+          "facilitati": [
+            "Ambasadă",
+            "Securitate",
+            "Zona diplomatică"
+          ]
+        }
+      ]
+    },
+    "Titan": {
+      "descriere": "Zona rezidențială din est - blocuri, parcuri, servicii",
+      "parcari": [
+        {
+          "nume": "Parcare Titan",
+          "adresa": "Strada Titan, Sector 3",
+          "rating": 3.9,
+          "pret_pe_ora": 4,
+          "disponibilitate": true,
+          "facilitati": [
+            "Zona rezidențială",
+            "Acces la metrou"
+          ]
+        },
+        {
+          "nume": "Parcare Parcul Titan",
+          "adresa": "Strada Titan, Sector 3",
+          "rating": 4.1,
+          "pret_pe_ora": 5,
+          "disponibilitate": true,
+          "facilitati": [
+            "Parc",
+            "Zona de agrement",
+            "Restaurante"
+          ]
+        },
+        {
+          "nume": "Parcare Titan Shopping",
+          "adresa": "Strada Titan, Sector 3",
+          "rating": 4,
+          "pret_pe_ora": 5,
+          "disponibilitate": true,
+          "facilitati": [
+            "Shopping center",
+            "Restaurante",
+            "Servicii"
+          ]
+        }
+      ]
+    },
+    "Militari": {
+      "descriere": "Zona rezidențială din vest - blocuri, parcuri, servicii",
+      "parcari": [
+        {
+          "nume": "Parcare Militari",
+          "adresa": "Strada Militari, Sector 6",
+          "rating": 3.8,
+          "pret_pe_ora": 3,
+          "disponibilitate": true,
+          "facilitati": [
+            "Zona rezidențială",
+            "Acces la metrou"
+          ]
+        },
+        {
+          "nume": "Parcare Parcul Militari",
+          "adresa": "Strada Militari, Sector 6",
+          "rating": 4,
+          "pret_pe_ora": 4,
+          "disponibilitate": true,
+          "facilitati": [
+            "Parc",
+            "Zona de agrement",
+            "Restaurante"
+          ]
+        },
+        {
+          "nume": "Parcare Militari Shopping",
+          "adresa": "Strada Militari, Sector 6",
+          "rating": 4.1,
+          "pret_pe_ora": 5,
+          "disponibilitate": true,
+          "facilitati": [
+            "Shopping center",
+            "Restaurante",
+            "Servicii"
+          ]
+        }
+      ]
+    },
+    "Colentina": {
+      "descriere": "Zona rezidențială din nord-est - blocuri, parcuri, servicii",
+      "parcari": [
+        {
+          "nume": "Parcare Colentina",
+          "adresa": "Strada Colentina, Sector 2",
+          "rating": 3.7,
+          "pret_pe_ora": 3,
+          "disponibilitate": true,
+          "facilitati": [
+            "Zona rezidențială",
+            "Acces la metrou"
+          ]
+        },
+        {
+          "nume": "Parcare Parcul Colentina",
+          "adresa": "Strada Colentina, Sector 2",
+          "rating": 3.9,
+          "pret_pe_ora": 4,
+          "disponibilitate": true,
+          "facilitati": [
+            "Parc",
+            "Zona de agrement",
+            "Restaurante"
+          ]
+        },
+        {
+          "nume": "Parcare Colentina Shopping",
+          "adresa": "Strada Colentina, Sector 2",
+          "rating": 4,
+          "pret_pe_ora": 5,
+          "disponibilitate": true,
+          "facilitati": [
+            "Shopping center",
+            "Restaurante",
+            "Servicii"
+          ]
+        }
+      ]
+    }
+  },
+  "statistics": {
+    "averagePrice": 5.5,
+    "averageRating": 4.1,
+    "zoneWithMostParkings": "Piața Victoriei",
+    "mostParkingsCount": 3
+  },
+  "generatedAt": "2025-08-04T11:20:10.064Z"
+}

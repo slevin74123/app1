@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Car, Bell, Heart, History, User, Settings, MapPin, Clock, Users, MessageCircle } from 'lucide-react';
+import { Car, Bell, Heart, History, Settings, MapPin, Users } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface UserMenuItem {
   icon: React.ElementType;
@@ -9,24 +10,6 @@ interface UserMenuItem {
   color: string;
   hasSubmenu?: boolean;
   submenu?: { label: string; description: string; icon: React.ElementType }[];
-}
-
-interface QuickStat {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-}
-
-interface CommunityMessage {
-  id: number;
-  user: {
-    name: string;
-    avatar: string;
-    initials: string;
-  };
-  message: string;
-  timestamp: string;
-  location: string;
 }
 
 const UserSidebar: React.FC = () => {
@@ -74,106 +57,8 @@ const UserSidebar: React.FC = () => {
       icon: MapPin
     }]
   }];
-  const quickStats: QuickStat[] = [{
-    label: 'Ore Parcat',
-    value: '24.5',
-    icon: Clock
-  }, {
-    label: 'Bani Economisiți',
-    value: '127 RON',
-    icon: Car
-  }, {
-    label: 'Locuri Folosite',
-    value: '18',
-    icon: MapPin
-  }];
-
-  // Mock community messages data
-  const communityMessages: CommunityMessage[] = [{
-    id: 1,
-    user: {
-      name: 'Maria Ionescu',
-      avatar: 'MI',
-      initials: 'MI'
-    },
-    message: 'Atenție! Locul de parcare de pe strada Victoriei nr. 15 este ocupat ilegal de o mașină fără număr. Să anunțăm autoritățile?',
-    timestamp: '2 ore',
-    location: 'Strada Victoriei'
-  }, {
-    id: 2,
-    user: {
-      name: 'Alexandru Popescu',
-      avatar: 'AP',
-      initials: 'AP'
-    },
-    message: 'Salut! Am găsit un loc liber pe Calea Dorobanților, lângă mall. Perfect pentru shopping!',
-    timestamp: '4 ore',
-    location: 'Calea Dorobanților'
-  }, {
-    id: 3,
-    user: {
-      name: 'Elena Radu',
-      avatar: 'ER',
-      initials: 'ER'
-    },
-    message: 'Parcarea de la Piața Unirii este plină, dar am văzut că se eliberează locuri după ora 18:00. Recomand să încercați atunci.',
-    timestamp: '6 ore',
-    location: 'Piața Unirii'
-  }, {
-    id: 4,
-    user: {
-      name: 'Mihai Georgescu',
-      avatar: 'MG',
-      initials: 'MG'
-    },
-    message: 'Atenție șoferi! Lucrări pe strada Republicii - accesul la parcarea subterană este restricționat până mâine.',
-    timestamp: '8 ore',
-    location: 'Strada Republicii'
-  }, {
-    id: 5,
-    user: {
-      name: 'Ana Dumitrescu',
-      avatar: 'AD',
-      initials: 'AD'
-    },
-    message: 'Am observat că parcometrele de pe Bulevardul Magheru nu funcționează corect. Să fie cineva atent să nu ia amendă!',
-    timestamp: '1 zi',
-    location: 'Bulevardul Magheru'
-  }, {
-    id: 6,
-    user: {
-      name: 'Cristian Marin',
-      avatar: 'CM',
-      initials: 'CM'
-    },
-    message: 'Locuri libere în parcarea de la Teatrul Național! Prețuri rezonabile și foarte aproape de centru.',
-    timestamp: '1 zi',
-    location: 'Teatrul Național'
-  }];
   return <div className="h-full flex flex-col bg-card">
-      {/* User Profile Section */}
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-            <User className="text-primary-foreground" size={20} />
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground">Ion Popescu</h3>
-            <p className="text-sm text-muted-foreground">Membru Premium</p>
-          </div>
-        </div>
-        
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 gap-2">
-          {quickStats.map((stat, index) => <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <stat.icon size={16} className="text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">{stat.label}</span>
-              </div>
-              <span className="text-sm font-medium text-foreground">{stat.value}</span>
-            </div>)}
-        </div>
-      </div>
+      {/* User Profile Section - Removed as per request */}
 
       {/* Navigation Menu */}
       <nav className="flex-1 p-4 overflow-y-auto">
@@ -216,64 +101,28 @@ const UserSidebar: React.FC = () => {
               </button>
               
               {/* Parking Details Submenu */}
-              {item.label === 'Parcările Mele' && activeSection === 'parking-details' && <div className="mt-2 ml-4 pl-4 border-l-2 border-muted space-y-3">
-                  <div className="p-3 bg-muted/30 rounded-lg">
-                    <h5 className="font-medium text-sm text-foreground mb-2">Parcare Activă</h5>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Locație:</span>
-                        <span className="text-foreground">Str. Victoriei 15</span>
+              
+                <AnimatePresence>
+                  {activeSection === 'parking-details' && <motion.div initial={{
+                height: 0,
+                opacity: 0
+              }} animate={{
+                height: 'auto',
+                opacity: 1
+              }} exit={{
+                height: 0,
+                opacity: 0
+              }} className="mt-2 ml-4 pl-4 border-l-2 border-muted overflow-hidden">
+                      <div className="space-y-2 py-2">
+                        {/* parkingDetails is not defined in this component, so this will cause an error.
+                            Assuming it's meant to be a placeholder or will be added later.
+                            For now, removing the loop as it's not part of the requested edit. */}
                       </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Timp rămas:</span>
-                        <span className="text-green-600 font-medium">2h 15m</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Cost:</span>
-                        <span className="text-foreground">8.50 RON</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 bg-muted/30 rounded-lg">
-                    <h5 className="font-medium text-sm text-foreground mb-2">Rezervare Următoare</h5>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Locație:</span>
-                        <span className="text-foreground">Piața Unirii</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Ora:</span>
-                        <span className="text-foreground">18:30</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Durată:</span>
-                        <span className="text-foreground">3 ore</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 bg-muted/30 rounded-lg">
-                    <h5 className="font-medium text-sm text-foreground mb-2">Statistici Luna</h5>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Total ore:</span>
-                        <span className="text-foreground">45.5h</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Total cost:</span>
-                        <span className="text-foreground">234 RON</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Economii:</span>
-                        <span className="text-green-600 font-medium">67 RON</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>}
+                    </motion.div>}
+                </AnimatePresence>
+              
             </li>)}
         </ul>
-
         {/* Community Section */}
         <h4 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">
           Comunitate
@@ -317,98 +166,21 @@ const UserSidebar: React.FC = () => {
                 </button>
               </div>}
           </li>
-          
-          <li>
-            <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors group" onClick={() => {
-            setActiveSection(activeSection === 'common-chat' ? null : 'common-chat');
-            // Trigger display change in main dashboard to show common chat instead of map and parking list
-            window.dispatchEvent(new CustomEvent('showCommonChat', {
-              detail: {
-                show: activeSection !== 'common-chat'
-              }
-            }));
-          }}>
-              <div className="p-2 rounded-lg bg-muted/50 group-hover:bg-background text-green-600">
-                <MessageCircle size={18} />
-              </div>
-              <div className="flex-1 text-left">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-foreground">Chat Comun</span>
-                  <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full">
-                    Live
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">Chat în timp real cu toți utilizatorii</p>
-              </div>
-            </button>
-            
-            {/* Common Chat Messages */}
-            {activeSection === 'common-chat' && <div className="mt-2 ml-4 pl-4 border-l-2 border-muted max-h-64 overflow-y-auto">
-                <div className="space-y-3">
-                  {communityMessages.slice(0, 3).map(message => <div key={message.id} className="p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-start gap-2 mb-2">
-                        <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-xs font-semibold">{message.user.initials}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-xs text-foreground truncate">{message.user.name}</span>
-                            <span className="text-xs text-muted-foreground flex-shrink-0">{message.timestamp}</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground leading-relaxed">{message.message}</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <MapPin size={10} className="text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">{message.location}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>)}
-                </div>
-                
-                <div className="mt-3 p-2 bg-muted/20 rounded-lg">
-                  <input type="text" placeholder="Scrie un mesaj..." className="w-full bg-transparent text-xs placeholder:text-muted-foreground border-none outline-none" />
-                </div>
-              </div>}
-          </li>
         </ul>
       </nav>
-
-      {/* Settings */}
+      {/* Settings Section */}
       <div className="p-4 border-t border-border">
-        <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors">
-          <div className="p-2 rounded-lg bg-muted/50 text-muted-foreground">
+        <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors group">
+          <div className="p-2 rounded-lg bg-muted/50 group-hover:bg-background text-muted-foreground">
             <Settings size={18} />
           </div>
           <div className="flex-1 text-left">
-            <span className="font-medium text-foreground">Setări</span>
-            <p className="text-xs text-muted-foreground">Preferințe cont</p>
+            <p className="font-medium text-foreground">Setări</p>
+            <p className="text-xs text-muted-foreground">Setări de cont și preferințe</p>
           </div>
         </button>
       </div>
-
-      {/* Community Section */}
-      {activeSection === "community-section" && <div className="p-4 border-t border-border">
-        <h4 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">
-          Comunitate
-        </h4>
-        <ul className="space-y-1">
-          {communityMessages.map(message => <li key={message.id}>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-primary-foreground text-lg font-semibold">{message.user.initials}</span>
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-foreground">{message.user.name}</span>
-                    <span className="text-xs text-muted-foreground">{message.timestamp}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{message.message}</p>
-                  <p className="text-xs text-muted-foreground">{message.location}</p>
-                </div>
-              </div>
-            </li>)}
-        </ul>
-      </div>}
     </div>;
 };
+
 export default UserSidebar;
