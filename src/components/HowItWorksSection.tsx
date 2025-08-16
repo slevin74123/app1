@@ -25,20 +25,8 @@ const steps: Step[] = [{
   id: "1",
   number: 1,
   icon: MapPin,
-  title: "Raportează un loc liber",
-  description: "Când părăsești un loc de parcare, raportează-l rapid în aplicație. Ajuți astfel alți șoferi să-l găsească mai ușor."
-}, {
-  id: "2",
-  number: 2,
-  icon: Car,
-  title: "Găsește un loc",
+  title: "Caută pe hartă",
   description: "Caută pe hartă locurile disponibile în zona dorită. Filtrează după distanță, preț sau tipul de parcare."
-}, {
-  id: "3",
-  number: 3,
-  icon: Users,
-  title: "Informează comunitatea",
-  description: "Confirmă disponibilitatea locurilor găsite și contribuie la acuratețea informațiilor pentru toți utilizatorii."
 }];
 export default function HowItWorksSection({
   title = "Cum funcționează?",

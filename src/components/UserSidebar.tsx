@@ -12,24 +12,6 @@ const UserSidebar: React.FC = () => {
     count: 2,
     color: 'text-blue-600'
   }, {
-    icon: Heart,
-    label: 'Favorite',
-    description: 'Locuri de parcare salvate',
-    count: 8,
-    color: 'text-red-600'
-  }, {
-    icon: History,
-    label: 'Istoric',
-    description: 'Sesiuni de parcare anterioare',
-    count: null,
-    color: 'text-green-600'
-  }, {
-    icon: MapPin,
-    label: 'Locuri Apropiate',
-    description: 'Locuri lângă poziția ta',
-    count: 12,
-    color: 'text-purple-600'
-  }, {
     icon: Users,
     label: 'Comunitate',
     description: 'Mesaje și informații comunitate',

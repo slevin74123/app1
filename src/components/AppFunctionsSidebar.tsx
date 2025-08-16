@@ -1,7 +1,25 @@
+"use client";
+
 import React, { useState } from 'react';
-import { MapPin, MessageSquare, Search, Plus, AlertTriangle, Users, Zap, Clock, TrendingUp } from 'lucide-react';
-const AppFunctionsSidebar: React.FC = () => {
+import { Plus, Search, AlertTriangle, Users, TrendingUp, MapPin, Clock, MessageSquare } from 'lucide-react';
+import ParkingSearchBar from './ParkingSearchBar';
+import { type SearchResult } from '@/lib/parkingService';
+import { NotificationService } from '@/lib/notificationService';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import NotificationsList from './NotificationsList';
+
+interface AppFunctionsSidebarProps {
+  onNotificationCreated?: () => void; // Callback pentru actualizarea notificărilor
+}
+
+export default function AppFunctionsSidebar({ onNotificationCreated }: AppFunctionsSidebarProps) {
   const [activeFunction, setActiveFunction] = useState<string | null>(null);
+  const [selectedParkingLocation, setSelectedParkingLocation] = useState<SearchResult | null>(null);
+  const [selectedParkingForFind, setSelectedParkingForFind] = useState<SearchResult | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<string>('');
+  const [selectedMaxPrice, setSelectedMaxPrice] = useState<string>('');
+  const { user } = useAuth();
   const mainFunctions = [{
     id: 'report',
     icon: Plus,
@@ -9,13 +27,6 @@ const AppFunctionsSidebar: React.FC = () => {
     description: 'Ajută comunitatea raportând parcări disponibile',
     color: 'bg-green-500',
     textColor: 'text-green-600'
-  }, {
-    id: 'inform',
-    icon: MessageSquare,
-    title: 'Informează Comunitatea',
-    description: 'Împărtășește actualizări despre condițiile de parcare',
-    color: 'bg-blue-500',
-    textColor: 'text-blue-600'
   }, {
     id: 'find',
     icon: Search,
@@ -71,6 +82,40 @@ const AppFunctionsSidebar: React.FC = () => {
         return <MapPin size={12} className="text-muted-foreground" />;
     }
   };
+  const handleFindParking = async () => {
+    if (selectedParkingForFind && selectedDuration && selectedMaxPrice !== undefined && user) {
+      try {
+        // Creează notificarea pentru utilizator
+        const result = await NotificationService.createParkingNotification(
+          user.id,
+          selectedParkingForFind.id,
+          selectedParkingForFind.name,
+          parseInt(selectedDuration),
+          parseFloat(selectedMaxPrice)
+        );
+
+        if (result.success) {
+          toast.success(`Notificare creată pentru ${selectedParkingForFind.name}! Vei fi notificat când se raportează locuri libere.`);
+          
+          // Resetează formularul
+          setSelectedParkingForFind(null);
+          setSelectedDuration('');
+          setSelectedMaxPrice('');
+          setActiveFunction(null);
+          
+          // Notifică dashboard-ul să actualizeze notificările
+          if (onNotificationCreated) {
+            onNotificationCreated();
+          }
+        } else {
+          toast.error(`Eroare la crearea notificării: ${result.error}`);
+        }
+      } catch (error) {
+        console.error('Error creating notification:', error);
+        toast.error('Eroare la crearea notificării. Încearcă din nou.');
+      }
+    }
+  };
   return <div className="h-full flex flex-col bg-card overflow-hidden">
       {/* Header */}
       <div className="p-6 border-b border-border">
@@ -96,30 +141,36 @@ const AppFunctionsSidebar: React.FC = () => {
             {/* Expanded Content */}
             {activeFunction === func.id && <div className="ml-4 p-3 bg-muted/30 rounded-lg border-l-2 border-primary">
                 {func.id === 'report' && <div className="space-y-3">
-                    <div className="relative">
-                      <input 
-                        type="text" 
-                        placeholder="Introdu locația sau adresa" 
-                        className="w-full px-3 py-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-2 focus:ring-ring" 
-                        list="parking-locations"
-                      />
-                      <datalist id="parking-locations">
-                        <option value="Piața Victoriei nr. 1, București" />
-                        <option value="Șoseaua Nordului nr. 7-9, București" />
-                        <option value="Strada Lipscani nr. 15, București" />
-                        <option value="Bulevardul Regina Elisabeta nr. 4-12, București" />
-                        <option value="Piața Romană nr. 6, București" />
-                        <option value="Bulevardul Magheru nr. 28-30, București" />
-                        <option value="Piața Unirii nr. 1, București" />
-                        <option value="Bulevardul Regina Elisabeta nr. 38, București" />
-                        <option value="Calea Obor nr. 10, București" />
-                        <option value="Șoseaua Floreasca nr. 169A, București" />
-                        <option value="Calea Vitan nr. 55-59, București" />
-                        <option value="Bulevardul Aviatorilor nr. 40, București" />
-                        <option value="Calea Dudești nr. 121, București" />
-                      </datalist>
-                    </div>
-                    <button className="w-full bg-green-600 text-white py-2 rounded text-sm hover:bg-green-700 transition-colors">
+                    <ParkingSearchBar
+                      placeholder="Caută parcare..."
+                      onLocationSelect={(location) => setSelectedParkingLocation(location)}
+                      className="w-full"
+                      maxResults={8}
+                    />
+                    {selectedParkingLocation && (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <MapPin size={16} className="text-green-600" />
+                          <span className="text-sm font-medium text-green-800">
+                            Parcare selectată
+                          </span>
+                        </div>
+                        <p className="text-sm text-green-700 mb-1">
+                          {selectedParkingLocation.name}
+                        </p>
+                        <p className="text-xs text-green-600">
+                          {selectedParkingLocation.address}, {selectedParkingLocation.city}
+                        </p>
+                      </div>
+                    )}
+                    <button 
+                      className={`w-full py-2 rounded text-sm transition-colors ${
+                        selectedParkingLocation 
+                          ? 'bg-green-600 text-white hover:bg-green-700' 
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                      disabled={!selectedParkingLocation}
+                    >
                       Adaugă Loc Liber
                     </button>
                   </div>}
@@ -139,29 +190,69 @@ const AppFunctionsSidebar: React.FC = () => {
                   </div>}
                 
                 {func.id === 'find' && <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <input type="text" placeholder="Destinația" className="flex-1 px-3 py-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                      <button className="px-3 py-2 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 transition-colors">
-                        <MapPin size={16} />
-                      </button>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Alege parcarea</label>
+                      <ParkingSearchBar
+                        placeholder="Caută parcare..."
+                        onLocationSelect={(location) => setSelectedParkingForFind(location)}
+                        className="w-full"
+                        maxResults={8}
+                      />
+                      {selectedParkingForFind && (
+                        <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <MapPin size={16} className="text-purple-600" />
+                            <span className="text-sm font-medium text-purple-800">
+                              Parcare selectată
+                            </span>
+                          </div>
+                          <p className="text-sm text-purple-700 mb-1">
+                            {selectedParkingForFind.name}
+                          </p>
+                          <p className="text-xs text-purple-600">
+                            {selectedParkingForFind.address}, {selectedParkingForFind.city}
+                          </p>
+                        </div>
+                      )}
                     </div>
+                    
                     <div className="flex gap-2">
-                      <select className="flex-1 px-3 py-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                        <option>Durata</option>
-                        <option>30 minute</option>
-                        <option>1 oră</option>
-                        <option>2 ore</option>
-                        <option>Toată ziua</option>
+                      <select 
+                        className="flex-1 px-3 py-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        value={selectedDuration}
+                        onChange={(e) => setSelectedDuration(e.target.value)}
+                      >
+                        <option value="">Durata</option>
+                        <option value="30">30 minute</option>
+                        <option value="60">1 oră</option>
+                        <option value="120">2 ore</option>
+                        <option value="480">8 ore</option>
+                        <option value="1440">Toată ziua</option>
                       </select>
-                      <select className="flex-1 px-3 py-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                        <option>Preț maxim</option>
-                        <option>10 RON/oră</option>
-                        <option>20 RON/oră</option>
-                        <option>30 RON/oră</option>
-                        <option>Fără limită</option>
+                      <select 
+                        className="flex-1 px-3 py-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        value={selectedMaxPrice}
+                        onChange={(e) => setSelectedMaxPrice(e.target.value)}
+                      >
+                        <option value="">Preț maxim</option>
+                        <option value="5">5 RON/oră</option>
+                        <option value="10">10 RON/oră</option>
+                        <option value="15">15 RON/oră</option>
+                        <option value="20">20 RON/oră</option>
+                        <option value="30">30 RON/oră</option>
+                        <option value="0">Gratuit</option>
                       </select>
                     </div>
-                    <button className="w-full bg-purple-600 text-white py-2 rounded text-sm hover:bg-purple-700 transition-colors">
+                    
+                    <button 
+                      className={`w-full py-2 rounded text-sm transition-colors ${
+                        selectedParkingForFind && selectedDuration && selectedMaxPrice !== undefined
+                          ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                      disabled={!selectedParkingForFind || !selectedDuration || selectedMaxPrice === undefined}
+                      onClick={handleFindParking}
+                    >
                       Găsește Cele Mai Bune Locuri
                     </button>
                   </div>}
@@ -175,21 +266,32 @@ const AppFunctionsSidebar: React.FC = () => {
           Mai Multe Acțiuni
         </h3>
         <div className="space-y-2">
-          {quickActions.map((action, index) => <button key={index} className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors">
-              <div className="p-2 rounded-lg bg-muted/50 text-muted-foreground">
-                <action.icon size={16} />
-              </div>
-              <div className="flex-1 text-left">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">{action.title}</span>
-                  {action.count && <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
-                      {action.count}
-                    </span>}
+          {quickActions.map(action => (
+            <button key={action.title} className="w-full p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-all duration-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <action.icon size={16} className="text-muted-foreground" />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-sm font-medium text-foreground">{action.title}</h4>
+                    <p className="text-xs text-muted-foreground">{action.description}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">{action.description}</p>
+                {action.count !== null && (
+                  <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
+                    {action.count}
+                  </span>
+                )}
               </div>
-            </button>)}
+            </button>
+          ))}
         </div>
+      </div>
+
+      {/* Notifications List */}
+      <div className="border-t border-border">
+        <NotificationsList />
       </div>
 
       {/* Recent Activity */}
@@ -212,4 +314,3 @@ const AppFunctionsSidebar: React.FC = () => {
       </div>
     </div>;
 };
-export default AppFunctionsSidebar;

@@ -1,3 +1,5 @@
+import { getVapidPublicKey } from './vapid';
+
 // Configurarea generală pentru API-uri
 export const API_CONFIG = {
   // Google Maps API
@@ -49,7 +51,7 @@ export const API_CONFIG = {
   // Configurare pentru notificări push
   PUSH_NOTIFICATIONS: {
     ENABLED: true,
-    VAPID_PUBLIC_KEY: 'your-vapid-public-key'
+    VAPID_PUBLIC_KEY: getVapidPublicKey()
   },
 
   // Configurare pentru cache și storage

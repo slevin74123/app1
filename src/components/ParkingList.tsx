@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Star, Heart, MapPin, Clock, DollarSign, Navigation, Car, Zap } from 'lucide-react';
+import MainSearchBar from './MainSearchBar';
 interface ParkingSpot {
   id: string;
   name: string;
