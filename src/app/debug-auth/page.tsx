@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 export default function DebugAuthPage() {
   const { user, signInWithGoogle, signInWithFacebook, signInWithInstagram } = useAuth();
   const [debugInfo, setDebugInfo] = useState<any>({});
@@ -200,7 +202,7 @@ export default function DebugAuthPage() {
           <CardContent>
             <div className="space-y-2 text-sm">
               <p><strong>Supabase URL:</strong> zugwcilkqqkyzloekddp.supabase.co</p>
-              <p><strong>Redirect URL:</strong> {window.location.origin}/dashboard</p>
+              <p><strong>Redirect URL:</strong> {typeof window !== 'undefined' ? window.location.origin : ''}/dashboard</p>
               <p><strong>Provider Google:</strong> Trebuie activat în Supabase Dashboard</p>
               <p><strong>Provider Facebook:</strong> Trebuie activat în Supabase Dashboard</p>
             </div>
@@ -214,7 +216,7 @@ export default function DebugAuthPage() {
           </CardHeader>
           <CardContent>
             <ol className="list-decimal list-inside space-y-2 text-sm">
-              <li>Mergi la Supabase Dashboard > Authentication > Providers</li>
+              <li>Mergi la Supabase Dashboard &gt; Authentication &gt; Providers</li>
               <li>Activează Google și Facebook</li>
               <li>Configurează credențialele OAuth în Google Cloud Console</li>
               <li>Adaugă credențialele în Supabase</li>

@@ -96,10 +96,31 @@ const AppFunctionsSidebar: React.FC = () => {
             {/* Expanded Content */}
             {activeFunction === func.id && <div className="ml-4 p-3 bg-muted/30 rounded-lg border-l-2 border-primary">
                 {func.id === 'report' && <div className="space-y-3">
-                    <input type="text" placeholder="Introdu locația sau adresa" className="w-full px-3 py-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                    <textarea placeholder="Detalii suplimentare (opțional)" rows={2} className="w-full px-3 py-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        placeholder="Introdu locația sau adresa" 
+                        className="w-full px-3 py-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-2 focus:ring-ring" 
+                        list="parking-locations"
+                      />
+                      <datalist id="parking-locations">
+                        <option value="Piața Victoriei nr. 1, București" />
+                        <option value="Șoseaua Nordului nr. 7-9, București" />
+                        <option value="Strada Lipscani nr. 15, București" />
+                        <option value="Bulevardul Regina Elisabeta nr. 4-12, București" />
+                        <option value="Piața Romană nr. 6, București" />
+                        <option value="Bulevardul Magheru nr. 28-30, București" />
+                        <option value="Piața Unirii nr. 1, București" />
+                        <option value="Bulevardul Regina Elisabeta nr. 38, București" />
+                        <option value="Calea Obor nr. 10, București" />
+                        <option value="Șoseaua Floreasca nr. 169A, București" />
+                        <option value="Calea Vitan nr. 55-59, București" />
+                        <option value="Bulevardul Aviatorilor nr. 40, București" />
+                        <option value="Calea Dudești nr. 121, București" />
+                      </datalist>
+                    </div>
                     <button className="w-full bg-green-600 text-white py-2 rounded text-sm hover:bg-green-700 transition-colors">
-                      Trimite Raport
+                      Adaugă Loc Liber
                     </button>
                   </div>}
                 

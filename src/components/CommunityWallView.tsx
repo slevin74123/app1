@@ -1,242 +1,408 @@
 "use client";
 
-import React, { useState } from 'react';
-import { MessageCircle, Heart, Share2, MapPin, Clock, Send, Image, Smile, MoreHorizontal, User } from 'lucide-react';
-export interface CommunityWallViewProps {
-  className?: string;
-}
-export default function CommunityWallView({
-  className = ""
-}: CommunityWallViewProps) {
-  const [newMessage, setNewMessage] = useState('');
+import React, { useState, useEffect } from 'react';
+import { 
+  MessageCircle, 
+  MapPin, 
+  Plus, 
+  X, 
+  ThumbsUp, 
+  ThumbsDown, 
+  Heart, 
+  Laugh, 
+  Zap, 
+  Frown, 
+  Angry,
+  Info,
+  AlertTriangle,
+  Lightbulb,
+  HelpCircle,
+  MessageSquare
+} from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { CommunityService, type CommunityPost, type CreatePostData, type ReactionType } from '@/lib/communityService';
+import { toast } from 'sonner';
 
-  // Mock community wall posts data
-  const communityPosts = [{
-    id: 1,
-    user: {
-      name: 'Maria Ionescu',
-      avatar: 'MI',
-      initials: 'MI',
-      isVerified: true
-    },
-    message: 'Atenție! Locul de parcare de pe strada Victoriei nr. 15 este ocupat ilegal de o mașină fără număr. Să anunțăm autoritățile? 🚗⚠️',
-    timestamp: '2 ore',
-    location: 'Strada Victoriei',
-    likes: 12,
-    comments: 3,
-    shares: 1,
-    isLiked: false,
-    image: null
-  }, {
-    id: 2,
-    user: {
-      name: 'Alexandru Popescu',
-      avatar: 'AP',
-      initials: 'AP',
-      isVerified: false
-    },
-    message: 'Salut! Am găsit un loc liber pe Calea Dorobanților, lângă mall. Perfect pentru shopping! Locul este gratuit pentru primele 2 ore. 🛍️',
-    timestamp: '4 ore',
-    location: 'Calea Dorobanților',
-    likes: 8,
-    comments: 5,
-    shares: 2,
-    isLiked: true,
-    image: null
-  }, {
-    id: 3,
-    user: {
-      name: 'Elena Radu',
-      avatar: 'ER',
-      initials: 'ER',
-      isVerified: true
-    },
-    message: 'Parcarea de la Piața Unirii este plină, dar am văzut că se eliberează locuri după ora 18:00. Recomand să încercați atunci. Prețurile sunt rezonabile - 5 RON/oră.',
-    timestamp: '6 ore',
-    location: 'Piața Unirii',
-    likes: 15,
-    comments: 7,
-    shares: 3,
-    isLiked: false,
-    image: null
-  }, {
-    id: 4,
-    user: {
-      name: 'Mihai Georgescu',
-      avatar: 'MG',
-      initials: 'MG',
-      isVerified: false
-    },
-    message: 'Atenție șoferi! Lucrări pe strada Republicii - accesul la parcarea subterană este restricționat până mâine. Folosiți parcarea de pe strada paralela. 🚧',
-    timestamp: '8 ore',
-    location: 'Strada Republicii',
-    likes: 23,
-    comments: 12,
-    shares: 8,
-    isLiked: true,
-    image: null
-  }, {
-    id: 5,
-    user: {
-      name: 'Ana Dumitrescu',
-      avatar: 'AD',
-      initials: 'AD',
-      isVerified: true
-    },
-    message: 'Am observat că parcometrele de pe Bulevardul Magheru nu funcționează corect. Să fie cineva atent să nu ia amendă! Am sunat la primărie să raportez problema.',
-    timestamp: '1 zi',
-    location: 'Bulevardul Magheru',
-    likes: 31,
-    comments: 18,
-    shares: 5,
-    isLiked: false,
-    image: null
-  }, {
-    id: 6,
-    user: {
-      name: 'Cristian Marin',
-      avatar: 'CM',
-      initials: 'CM',
-      isVerified: false
-    },
-    message: 'Locuri libere în parcarea de la Teatrul Național! Prețuri rezonabile și foarte aproape de centru. Perfect pentru spectacole de seară. 🎭',
-    timestamp: '1 zi',
-    location: 'Teatrul Național',
-    likes: 19,
-    comments: 9,
-    shares: 4,
-    isLiked: true,
-    image: null
-  }] as any[];
-  const handleSubmitMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newMessage.trim()) {
-      // Handle message submission
-      console.log('Submitting message:', newMessage);
-      setNewMessage('');
+export default function CommunityWallView() {
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newPost, setNewPost] = useState<CreatePostData>({
+    message: '',
+    location: '',
+    post_type: 'general'
+  });
+  const [selectedPostType, setSelectedPostType] = useState<string>('all');
+  const { user } = useAuth();
+
+  // Load posts on component mount
+  useEffect(() => {
+    loadPosts();
+  }, []);
+
+  const loadPosts = async () => {
+    setIsLoading(true);
+    try {
+      const result = await CommunityService.getCommunityPosts();
+      if (result.success && result.data) {
+        setPosts(result.data);
+      } else {
+        console.error('Error loading posts:', result.error);
+        toast.error('Eroare la încărcarea postărilor');
+      }
+    } catch (error) {
+      console.error('Error loading posts:', error);
+      toast.error('Eroare neașteptată');
+    } finally {
+      setIsLoading(false);
     }
   };
-  const handleLike = (postId: number) => {
-    // Handle like functionality
-    console.log('Liking post:', postId);
+
+  const handleCreatePost = async () => {
+    if (!user) {
+      toast.error('Trebuie să fii autentificat pentru a crea o postare');
+      return;
+    }
+
+    if (!newPost.message.trim()) {
+      toast.error('Mesajul nu poate fi gol');
+      return;
+    }
+
+    try {
+      const result = await CommunityService.createPost(user, newPost);
+      if (result.success && result.data) {
+        // Add new post to the beginning of the list
+        setPosts(prev => [result.data!, ...prev]);
+        setNewPost({ message: '', location: '', post_type: 'general' });
+        setShowCreateForm(false);
+        toast.success('Postarea a fost creată cu succes!');
+      } else {
+        toast.error(`Eroare la crearea postării: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error creating post:', error);
+      toast.error('Eroare neașteptată la crearea postării');
+    }
   };
-  const handleComment = (postId: number) => {
-    // Handle comment functionality
-    console.log('Commenting on post:', postId);
+
+  const handleReaction = async (postId: string, reactionType: ReactionType) => {
+    if (!user) {
+      toast.error('Trebuie să fii autentificat pentru a reacționa');
+      return;
+    }
+
+    try {
+      const result = await CommunityService.toggleReaction(user, postId, reactionType);
+      if (result.success) {
+        // Refresh posts to get updated reaction counts
+        await loadPosts();
+        toast.success('Reacția a fost actualizată!');
+      } else {
+        toast.error(`Eroare la actualizarea reacției: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error toggling reaction:', error);
+      toast.error('Eroare neașteptată la actualizarea reacției');
+    }
   };
-  const handleShare = (postId: number) => {
-    // Handle share functionality
-    console.log('Sharing post:', postId);
+
+  const handleDeletePost = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      const result = await CommunityService.deletePost(user, postId);
+      if (result.success) {
+        setPosts(prev => prev.filter(post => post.id !== postId));
+        toast.success('Postarea a fost ștearsă cu succes!');
+      } else {
+        toast.error(`Eroare la ștergerea postării: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast.error('Eroare neașteptată la ștergerea postării');
+    }
   };
-  return <div className={`h-full flex flex-col bg-background ${className}`}>
+
+  const getPostTypeIcon = (type: string) => {
+    switch (type) {
+      case 'info': return <Info className="w-4 h-4 text-blue-500" />;
+      case 'warning': return <AlertTriangle className="w-4 h-4 text-orange-500" />;
+      case 'tip': return <Lightbulb className="w-4 h-4 text-yellow-500" />;
+      case 'question': return <HelpCircle className="w-4 h-4 text-purple-500" />;
+      default: return <MessageSquare className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
+  const getPostTypeColor = (type: string) => {
+    switch (type) {
+      case 'info': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'warning': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'tip': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'question': return 'bg-purple-100 text-purple-800 border-purple-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getPostTypeLabel = (type: string) => {
+    switch (type) {
+      case 'info': return 'Informație';
+      case 'warning': return 'Atenție';
+      case 'tip': return 'Sfat';
+      case 'question': return 'Întrebare';
+      default: return 'General';
+    }
+  };
+
+  const filteredPosts = selectedPostType === 'all' 
+    ? posts 
+    : posts.filter(post => post.post_type === selectedPostType);
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Acum';
+    if (diffInMinutes < 60) return `Acum ${diffInMinutes} min`;
+    if (diffInMinutes < 1440) return `Acum ${Math.floor(diffInMinutes / 60)}h`;
+    return `Acum ${Math.floor(diffInMinutes / 1440)} zile`;
+  };
+
+  return (
+    <div className="h-full bg-background overflow-y-auto">
       {/* Header */}
-      <div className="bg-card border-b border-border p-6">
-        <div className="flex items-center justify-between">
+      <div className="p-6 border-b border-border bg-card">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-3 bg-indigo-100 rounded-xl">
+            <MessageCircle className="text-indigo-600" size={24} />
+          </div>
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Comunitate</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Informații și mesaje de la comunitatea de șoferi
-            </p>
+            <h1 className="text-2xl font-bold text-foreground">Comunitatea Parcării</h1>
+            <p className="text-muted-foreground">Împărtășește informații și sfaturi cu alți șoferi</p>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span>Live</span>
-          </div>
+        </div>
+
+        {/* Create Post Button */}
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          <Plus size={20} />
+          Creează o Postare
+        </button>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="p-4 border-b border-border bg-card">
+        <div className="flex flex-wrap gap-2">
+          {['all', 'info', 'warning', 'tip', 'question', 'general'].map((type) => (
+            <button
+              key={type}
+              onClick={() => setSelectedPostType(type)}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                selectedPostType === type
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {type === 'all' ? 'Toate' : getPostTypeLabel(type)}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Community Wall Posts */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto p-6 space-y-6">
-          {/* New Post Input */}
-          <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
-            <form onSubmit={handleSubmitMessage} className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                  IP
-                </div>
-                <div className="flex-1">
-                  <textarea value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Informează comunitatea despre situația parcărilor..." className="w-full bg-background border border-input rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent" rows={3} />
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <button type="button" className="p-2 hover:bg-accent rounded-lg transition-colors" aria-label="Add image">
-                    <Image size={18} className="text-muted-foreground" />
-                  </button>
-                  <button type="button" className="p-2 hover:bg-accent rounded-lg transition-colors" aria-label="Add emoji">
-                    <Smile size={18} className="text-muted-foreground" />
-                  </button>
-                  <button type="button" className="p-2 hover:bg-accent rounded-lg transition-colors" aria-label="Add location">
-                    <MapPin size={18} className="text-muted-foreground" />
-                  </button>
-                </div>
-                
-                <button type="submit" disabled={!newMessage.trim()} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                  <Send size={16} />
-                  <span>Postează</span>
-                </button>
-              </div>
-            </form>
-          </div>
+      {/* Create Post Modal */}
+      {showCreateForm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Creează o Postare</h2>
+              <button
+                onClick={() => setShowCreateForm(false)}
+                className="p-1 hover:bg-muted rounded"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-          {/* Posts */}
-          {communityPosts.map(post => <article key={post.id} className="bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Tipul Postării</label>
+                <select
+                  value={newPost.post_type}
+                  onChange={(e) => setNewPost(prev => ({ ...prev, post_type: e.target.value as any }))}
+                  className="w-full p-2 border border-input rounded-md bg-background"
+                >
+                  <option value="general">General</option>
+                  <option value="info">Informație</option>
+                  <option value="warning">Atenție</option>
+                  <option value="tip">Sfat</option>
+                  <option value="question">Întrebare</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Mesajul</label>
+                <textarea
+                  value={newPost.message}
+                  onChange={(e) => setNewPost(prev => ({ ...prev, message: e.target.value }))}
+                  placeholder="Scrie mesajul tău aici..."
+                  className="w-full p-2 border border-input rounded-md bg-background h-24 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Locația (opțional)</label>
+                <input
+                  type="text"
+                  value={newPost.location}
+                  onChange={(e) => setNewPost(prev => ({ ...prev, location: e.target.value }))}
+                  placeholder="ex: Piața Victoriei, București"
+                  className="w-full p-2 border border-input rounded-md bg-background"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCreatePost}
+                  className="flex-1 bg-primary text-primary-foreground py-2 rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  Postează
+                </button>
+                <button
+                  onClick={() => setShowCreateForm(false)}
+                  className="flex-1 bg-muted text-muted-foreground py-2 rounded-md hover:bg-muted/80 transition-colors"
+                >
+                  Anulează
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Posts List */}
+      <div className="p-4 space-y-4">
+        {isLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground mt-2">Se încarcă postările...</p>
+          </div>
+        ) : filteredPosts.length > 0 ? (
+          filteredPosts.map((post) => (
+            <div key={post.id} className="bg-card border border-border rounded-lg p-4">
               {/* Post Header */}
-              <header className="flex items-start justify-between mb-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                    {post.user.initials}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                    {post.user_avatar ? (
+                      <img src={post.user_avatar} alt={post.user_name} className="w-10 h-10 rounded-full" />
+                    ) : (
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {post.user_name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground">{post.user.name}</h3>
-                      {post.user.isVerified && <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs">✓</span>
-                        </div>}
-                    </div>
+                  <div>
+                    <p className="font-medium text-foreground">{post.user_name}</p>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock size={12} />
-                      <span>{post.timestamp}</span>
+                      {getPostTypeIcon(post.post_type)}
+                      <span className={getPostTypeColor(post.post_type) + ' px-2 py-1 rounded-full text-xs border'}>
+                        {getPostTypeLabel(post.post_type)}
+                      </span>
                       <span>•</span>
-                      <MapPin size={12} />
-                      <span>{post.location}</span>
+                      <span>{formatTimeAgo(post.created_at)}</span>
                     </div>
                   </div>
                 </div>
                 
-                <button className="p-2 hover:bg-accent rounded-lg transition-colors">
-                  <MoreHorizontal size={16} className="text-muted-foreground" />
-                </button>
-              </header>
+                {user && post.user_id === user.id && (
+                  <button
+                    onClick={() => handleDeletePost(post.id)}
+                    className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
 
               {/* Post Content */}
               <div className="mb-4">
-                <p className="text-foreground leading-relaxed">{post.message}</p>
+                <p className="text-foreground mb-2">{post.message}</p>
+                {post.location && (
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <MapPin size={14} />
+                    {post.location}
+                  </div>
+                )}
               </div>
 
-              {/* Post Actions */}
-              <footer className="flex items-center justify-between pt-4 border-t border-border">
-                <div className="flex items-center gap-6">
-                  <button onClick={() => handleLike(post.id)} className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${post.isLiked ? 'text-red-600 bg-red-50 hover:bg-red-100' : 'text-muted-foreground hover:bg-accent'}`}>
-                    <Heart size={16} className={post.isLiked ? 'fill-current' : ''} />
-                    <span className="text-sm font-medium">{post.likes}</span>
-                  </button>
-                  
-                  <button onClick={() => handleComment(post.id)} className="flex items-center gap-2 px-3 py-2 rounded-lg text-muted-foreground hover:bg-accent transition-colors">
-                    <MessageCircle size={16} />
-                    <span className="text-sm font-medium">{post.comments}</span>
-                  </button>
-                  
-                  <button onClick={() => handleShare(post.id)} className="flex items-center gap-2 px-3 py-2 rounded-lg text-muted-foreground hover:bg-accent transition-colors">
-                    <Share2 size={16} />
-                    <span className="text-sm font-medium">{post.shares}</span>
-                  </button>
+              {/* Reactions */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {(['like', 'dislike', 'heart', 'laugh', 'wow', 'sad', 'angry'] as ReactionType[]).map((reaction) => {
+                    const count = post[`${reaction}_count` as keyof CommunityPost] as number;
+                    const isActive = post.user_reaction === reaction;
+                    
+                    const getReactionIcon = (type: ReactionType) => {
+                      switch (type) {
+                        case 'like': return <ThumbsUp size={16} />;
+                        case 'dislike': return <ThumbsDown size={16} />;
+                        case 'heart': return <Heart size={16} />;
+                        case 'laugh': return <Laugh size={16} />;
+                        case 'wow': return <Zap size={16} />;
+                        case 'sad': return <Frown size={16} />;
+                        case 'angry': return <Angry size={16} />;
+                      }
+                    };
+
+                    const getReactionColor = (type: ReactionType) => {
+                      if (isActive) return 'text-primary';
+                      switch (type) {
+                        case 'like': return 'text-green-500';
+                        case 'dislike': return 'text-red-500';
+                        case 'heart': return 'text-pink-500';
+                        case 'laugh': return 'text-yellow-500';
+                        case 'wow': return 'text-blue-500';
+                        case 'sad': return 'text-gray-500';
+                        case 'angry': return 'text-orange-500';
+                        default: return 'text-muted-foreground';
+                      }
+                    };
+
+                    return (
+                      <button
+                        key={reaction}
+                        onClick={() => handleReaction(post.id, reaction)}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-full hover:bg-muted transition-colors ${
+                          isActive ? 'bg-primary/10' : ''
+                        }`}
+                        title={reaction.charAt(0).toUpperCase() + reaction.slice(1)}
+                      >
+                        <span className={getReactionColor(reaction)}>
+                          {getReactionIcon(reaction)}
+                        </span>
+                        {count > 0 && (
+                          <span className="text-xs text-muted-foreground">{count}</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-              </footer>
-            </article>)}
-        </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 bg-muted/30 rounded-lg">
+            <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">Nu există încă postări</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Fii primul care împărtășește ceva cu comunitatea!
+            </p>
+          </div>
+        )}
       </div>
-    </div>;
+    </div>
+  );
 }

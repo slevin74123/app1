@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useFavorites } from '@/contexts/FavoritesContext';
 interface User {
   name: string;
   avatarUrl: string;
@@ -74,6 +75,28 @@ const mockFavorites: FavoriteParking[] = [{
   distance: 1.2,
   addedDate: "8 Dec 2024"
 }];
+
+// Function to get favorites from localStorage
+const getFavoritesFromStorage = (): FavoriteParking[] => {
+  try {
+    const stored = localStorage.getItem('myParkings');
+    if (stored) {
+      const myParkings = JSON.parse(stored);
+      return myParkings.filter((p: any) => p.status === 'favorite').map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        address: p.address,
+        rating: p.rating || 4.0,
+        price: p.price || 0,
+        distance: 0, // Will be calculated if needed
+        addedDate: p.addedDate
+      }));
+    }
+  } catch (error) {
+    console.error('Error reading from localStorage:', error);
+  }
+  return mockFavorites; // Fallback to mock data
+};
 const mockBookings: Booking[] = [{
   id: "1",
   parkingName: "Parcare Premium Unirii",
@@ -140,32 +163,48 @@ const mockTimelineActivities: TimelineActivity[] = [{
 }];
 export default function FavoritesTab({
 }: FavoritesTabProps) {
-  const [favorites, setFavorites] = useState<FavoriteParking[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [timelineActivities, setTimelineActivities] = useState<TimelineActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const { favorites, isLoading: favoritesLoading, removeFromFavorites } = useFavorites();
 
-  // Simulate loading data
+  // Load data from context (favorites are loaded automatically)
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setFavorites(mockFavorites);
+        // Favorites are loaded automatically by the context
         setBookings(mockBookings);
         setTimelineActivities(mockTimelineActivities);
+      } catch (error) {
+        console.error('Error loading data:', error);
       } finally {
         setIsLoading(false);
       }
     };
     loadData();
   }, []);
-  const handleRemoveFavorite = (favorite: FavoriteParking) => {
-    setFavorites(prev => prev.filter(f => f.id !== favorite.id));
-    toast.success(`${favorite.name} a fost eliminat din favorite`);
+
+  // Update loading state based on favorites loading
+  useEffect(() => {
+    setIsLoading(favoritesLoading);
+  }, [favoritesLoading]);
+  const handleRemoveFavorite = async (favorite: FavoriteParking) => {
+    try {
+      // Remove from favorites using context
+      const result = await removeFromFavorites(favorite.id);
+      
+      if (result.success) {
+        toast.success(`${favorite.name} a fost eliminat din favorite`);
+      } else {
+        toast.error(`Eroare la eliminarea din favorite: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+      toast.error('Eroare neașteptată la eliminarea din favorite!');
+    }
   };
   const handleNavigateToParking = (parking: FavoriteParking) => {
     toast.success(`Navigare către ${parking.name}`);

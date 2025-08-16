@@ -49,8 +49,7 @@ export const API_CONFIG = {
   // Configurare pentru notificări push
   PUSH_NOTIFICATIONS: {
     ENABLED: true,
-    VAPID_PUBLIC_KEY: 'your-vapid-public-key',
-    VAPID_PRIVATE_KEY: 'your-vapid-private-key'
+    VAPID_PUBLIC_KEY: 'your-vapid-public-key'
   },
 
   // Configurare pentru cache și storage
@@ -65,17 +64,22 @@ export const API_CONFIG = {
     REQUESTS_PER_MINUTE: 60,
     REQUESTS_PER_HOUR: 1000
   }
-};
+} as const;
+
+export type AppConfig = typeof API_CONFIG;
+export type PushConfig = AppConfig['PUSH_NOTIFICATIONS'];
 
 // Funcție pentru a obține configurarea pentru un API specific
 export const getApiConfig = (apiName: keyof typeof API_CONFIG) => {
   return API_CONFIG[apiName];
 };
 
+export const getPushConfig = (): PushConfig => API_CONFIG.PUSH_NOTIFICATIONS;
+
 // Funcție pentru a verifica dacă un API este activat
 export const isApiEnabled = (apiName: keyof typeof API_CONFIG) => {
   const config = API_CONFIG[apiName];
   return config && typeof config === 'object' && 'ENABLED' in config 
-    ? config.ENABLED 
+    ? (config as any).ENABLED 
     : true;
 }; 

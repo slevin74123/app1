@@ -1,284 +1,536 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, MapPin, Clock, Users, Smile, Paperclip, MoreVertical } from 'lucide-react';
-export interface CommonChatViewProps {
-  className?: string;
-}
-export default function CommonChatView({
-  className = ""
-}: CommonChatViewProps) {
-  const [message, setMessage] = useState('');
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  MessageCircle, 
+  Send, 
+  Edit3, 
+  Trash2, 
+  X, 
+  ThumbsUp, 
+  Heart, 
+  Laugh, 
+  Zap, 
+  Frown, 
+  Angry,
+  Info,
+  AlertTriangle,
+  Lightbulb,
+  Type,
+  Users,
+  Circle
+} from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { ChatService, type ChatMessage, type CreateMessageData, type ReactionType, type OnlineUser } from '@/lib/chatService';
+import { toast } from 'sonner';
+
+export default function CommonChatView() {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [newMessage, setNewMessage] = useState('');
+  const [selectedMessageType, setSelectedMessageType] = useState<'text' | 'info' | 'warning' | 'tip'>('text');
+  const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
+  const [editText, setEditText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [userReactions, setUserReactions] = useState<Record<string, string>>({});
+  const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth"
-    });
-  };
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load messages and online users on component mount
+  useEffect(() => {
+    if (user) {
+      loadMessages();
+      loadOnlineUsers();
+      updateOnlineStatus();
+      
+      // Set up periodic updates
+      const interval = setInterval(() => {
+        loadMessages();
+        loadOnlineUsers();
+        updateOnlineStatus();
+      }, 5000); // Update every 5 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  // Scroll to bottom when new messages arrive
   useEffect(() => {
     scrollToBottom();
-  }, []);
+  }, [messages]);
 
-  // Mock chat messages data
-  const chatMessages = [{
-    id: 1,
-    user: {
-      name: 'Maria Ionescu',
-      avatar: 'MI',
-      initials: 'MI',
-      isOnline: true
-    },
-    message: 'Salut tuturor! Am găsit un loc liber pe strada Victoriei, lângă numărul 15. Perfect pentru cine are nevoie!',
-    timestamp: '10:30',
-    location: 'Strada Victoriei',
-    isOwn: false,
-    reactions: ['👍', '❤️'],
-    reactionCount: 3
-  }, {
-    id: 2,
-    user: {
-      name: 'Alexandru Popescu',
-      avatar: 'AP',
-      initials: 'AP',
-      isOnline: true
-    },
-    message: 'Mulțumesc Maria! Tocmai am ajuns în zonă. Este încă disponibil?',
-    timestamp: '10:32',
-    location: null,
-    isOwn: false,
-    reactions: [],
-    reactionCount: 0
-  }, {
-    id: 3,
-    user: {
-      name: 'Tu',
-      avatar: 'IP',
-      initials: 'IP',
-      isOnline: true
-    },
-    message: 'Și eu sunt interesat! Dacă Alexandru nu îl ia, pot să vin eu.',
-    timestamp: '10:33',
-    location: null,
-    isOwn: true,
-    reactions: ['👍'],
-    reactionCount: 1
-  }, {
-    id: 4,
-    user: {
-      name: 'Elena Radu',
-      avatar: 'ER',
-      initials: 'ER',
-      isOnline: false
-    },
-    message: 'Atenție! Parcarea de la Piața Unirii este plină, dar am văzut că se eliberează locuri după ora 18:00. Recomand să încercați atunci.',
-    timestamp: '10:35',
-    location: 'Piața Unirii',
-    isOwn: false,
-    reactions: ['👍', '💡'],
-    reactionCount: 5
-  }, {
-    id: 5,
-    user: {
-      name: 'Mihai Georgescu',
-      avatar: 'MG',
-      initials: 'MG',
-      isOnline: true
-    },
-    message: 'Atenție șoferi! Lucrări pe strada Republicii - accesul la parcarea subterană este restricționat până mâine.',
-    timestamp: '10:40',
-    location: 'Strada Republicii',
-    isOwn: false,
-    reactions: ['⚠️'],
-    reactionCount: 8
-  }, {
-    id: 6,
-    user: {
-      name: 'Ana Dumitrescu',
-      avatar: 'AD',
-      initials: 'AD',
-      isOnline: true
-    },
-    message: 'Am observat că parcometrele de pe Bulevardul Magheru nu funcționează corect. Să fie cineva atent să nu ia amendă!',
-    timestamp: '10:45',
-    location: 'Bulevardul Magheru',
-    isOwn: false,
-    reactions: ['⚠️', '👍'],
-    reactionCount: 12
-  }] as any[];
-  const onlineUsers = [{
-    name: 'Maria Ionescu',
-    initials: 'MI',
-    status: 'Activ acum'
-  }, {
-    name: 'Alexandru Popescu',
-    initials: 'AP',
-    status: 'Activ acum'
-  }, {
-    name: 'Mihai Georgescu',
-    initials: 'MG',
-    status: 'Activ acum'
-  }, {
-    name: 'Ana Dumitrescu',
-    initials: 'AD',
-    status: 'Activ acum'
-  }, {
-    name: 'Cristian Marin',
-    initials: 'CM',
-    status: 'Activ acum'
-  }] as any[];
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      // Here you would typically send the message to your backend
-      console.log('Sending message:', message);
-      setMessage('');
+  // Update typing status when user types
+  useEffect(() => {
+    if (user && isTyping) {
+      ChatService.setTypingStatus(user, true);
+      
+      // Clear typing status after 3 seconds of inactivity
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false);
+        ChatService.setTypingStatus(user, false);
+      }, 3000);
+    }
+
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [isTyping, user]);
+
+  const loadMessages = async () => {
+    try {
+      const result = await ChatService.getChatMessages();
+      if (result.success && result.data) {
+        setMessages(result.data);
+        // Load user reactions for each message
+        if (user) {
+          await loadUserReactions(result.data);
+        }
+      } else {
+        console.error('Error loading messages:', result.error);
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+
+  const loadUserReactions = async (messages: ChatMessage[]) => {
+    if (!user) return;
+    
+    try {
+      const reactions: Record<string, string> = {};
+      for (const message of messages) {
+        const result = await ChatService.getUserReactionForMessage(message.id, user.id);
+        if (result.success && result.data && result.data.length > 0) {
+          reactions[message.id] = result.data[0].reaction_type;
+        }
+      }
+      setUserReactions(reactions);
+    } catch (error) {
+      console.error('Error loading user reactions:', error);
     }
   };
-  return <div className={`h-full flex flex-col bg-background ${className}`}>
-      {/* Chat Header */}
-      <div className="bg-card border-b border-border p-4">
+
+  const loadOnlineUsers = async () => {
+    try {
+      const result = await ChatService.getOnlineUsers();
+      if (result.success && result.data) {
+        setOnlineUsers(result.data);
+        
+        // Extract typing users
+        const typing = result.data
+          .filter(u => u.is_typing && u.user_id !== user?.id)
+          .map(u => u.user_name);
+        setTypingUsers(typing);
+      }
+    } catch (error) {
+      console.error('Error loading online users:', error);
+    }
+  };
+
+  const updateOnlineStatus = async () => {
+    if (user) {
+      try {
+        await ChatService.updateOnlineStatus(user);
+      } catch (error) {
+        console.error('Error updating online status:', error);
+      }
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSendMessage = async () => {
+    if (!user || !newMessage.trim()) return;
+
+    try {
+      const messageData: CreateMessageData = {
+        message: newMessage.trim(),
+        message_type: selectedMessageType
+      };
+
+      const result = await ChatService.createMessage(user, messageData);
+      if (result.success && result.data) {
+        // Add new message to the list
+        setMessages(prev => [...prev, result.data!]);
+        setNewMessage('');
+        setSelectedMessageType('text');
+        
+        // Update online status
+        await updateOnlineStatus();
+        
+        toast.success('Mesajul a fost trimis!');
+      } else {
+        toast.error(`Eroare la trimiterea mesajului: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Eroare neașteptată la trimiterea mesajului');
+    }
+  };
+
+  const handleEditMessage = async () => {
+    if (!user || !editingMessage || !editText.trim()) return;
+
+    try {
+      const result = await ChatService.editMessage(user, editingMessage.id, editText.trim());
+      if (result.success) {
+        // Update message in the list
+        setMessages(prev => prev.map(msg => 
+          msg.id === editingMessage.id 
+            ? { ...msg, message: editText.trim(), is_edited: true, edited_at: new Date().toISOString() }
+            : msg
+        ));
+        
+        setEditingMessage(null);
+        setEditText('');
+        toast.success('Mesajul a fost editat cu succes!');
+      } else {
+        toast.error(`Eroare la editarea mesajului: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error editing message:', error);
+      toast.error('Eroare neașteptată la editarea mesajului');
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!user) return;
+
+    try {
+      const result = await ChatService.deleteMessage(user, messageId);
+      if (result.success) {
+        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+        toast.success('Mesajul a fost șters cu succes!');
+      } else {
+        toast.error(`Eroare la ștergerea mesajului: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast.error('Eroare neașteptată la ștergerea mesajului');
+    }
+  };
+
+  const handleReaction = async (messageId: string, reactionType: ReactionType) => {
+    if (!user) return;
+
+    try {
+      const result = await ChatService.toggleReaction(user, messageId, reactionType);
+      if (result.success) {
+        // Update local user reactions
+        if (result.newReactionType) {
+          setUserReactions(prev => ({ ...prev, [messageId]: result.newReactionType! }));
+        } else {
+          setUserReactions(prev => {
+            const newReactions = { ...prev };
+            delete newReactions[messageId];
+            return newReactions;
+          });
+        }
+        
+        // Refresh messages to get updated reaction counts
+        await loadMessages();
+        toast.success('Reacția a fost actualizată!');
+      } else {
+        toast.error(`Eroare la actualizarea reacției: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error toggling reaction:', error);
+      toast.error('Eroare neașteptată la actualizarea reacției');
+    }
+  };
+
+  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    
+    if (!isTyping) {
+      setIsTyping(true);
+    }
+  };
+
+  const getMessageTypeIcon = (type: string) => {
+    switch (type) {
+      case 'info': return <Info className="w-4 h-4 text-blue-500" />;
+      case 'warning': return <AlertTriangle className="w-4 h-4 text-orange-500" />;
+      case 'tip': return <Lightbulb className="w-4 h-4 text-yellow-500" />;
+      default: return <Type className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
+  const getMessageTypeColor = (type: string) => {
+    switch (type) {
+      case 'info': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'warning': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'tip': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getMessageTypeLabel = (type: string) => {
+    switch (type) {
+      case 'info': return 'Informație';
+      case 'warning': return 'Atenție';
+      case 'tip': return 'Sfat';
+      default: return 'Text';
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Acum';
+    if (diffInMinutes < 60) return `Acum ${diffInMinutes} min`;
+    if (diffInMinutes < 1440) return `Acum ${Math.floor(diffInMinutes / 60)}h`;
+    return `Acum ${Math.floor(diffInMinutes / 1440)} zile`;
+  };
+
+  const getReactionIcon = (type: ReactionType) => {
+    switch (type) {
+      case 'like': return <ThumbsUp size={16} />;
+      case 'heart': return <Heart size={16} />;
+      case 'laugh': return <Laugh size={16} />;
+      case 'wow': return <Zap size={16} />;
+      case 'sad': return <Frown size={16} />;
+      case 'angry': return <Angry size={16} />;
+    }
+  };
+
+  const getReactionColor = (type: ReactionType, isActive: boolean) => {
+    if (isActive) return 'text-primary';
+    switch (type) {
+      case 'like': return 'text-green-500';
+      case 'heart': return 'text-pink-500';
+      case 'laugh': return 'text-yellow-500';
+      case 'wow': return 'text-blue-500';
+      case 'sad': return 'text-gray-500';
+      case 'angry': return 'text-orange-500';
+      default: return 'text-muted-foreground';
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <MessageCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">Trebuie să fii autentificat pentru a accesa chat-ul</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full bg-background flex flex-col">
+      {/* Header */}
+      <div className="p-4 border-b border-border bg-card">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-              <Users className="text-white" size={20} />
+            <div className="p-2 bg-green-100 rounded-lg">
+              <MessageCircle className="text-green-600" size={20} />
             </div>
             <div>
-              <h2 className="font-semibold text-foreground">Chat Comun</h2>
-              <p className="text-sm text-muted-foreground">
-                {onlineUsers.length} utilizatori online
-              </p>
+              <h1 className="text-xl font-semibold text-foreground">Chat Comun</h1>
+              <p className="text-sm text-muted-foreground">Chat în timp real cu toți utilizatorii</p>
             </div>
           </div>
-          <button className="p-2 hover:bg-accent rounded-lg transition-colors">
-            <MoreVertical size={20} className="text-muted-foreground" />
+          
+          {/* Online Users */}
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              {onlineUsers.length} online
+            </span>
+          </div>
+        </div>
+
+        {/* Typing Indicator */}
+        {typingUsers.length > 0 && (
+          <div className="mt-2 text-sm text-muted-foreground">
+            {typingUsers.join(', ')} {typingUsers.length === 1 ? 'scrie' : 'scriu'}...
+          </div>
+        )}
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {isLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground mt-2">Se încarcă mesajele...</p>
+          </div>
+        ) : messages.length > 0 ? (
+          messages.map((message) => (
+            <div key={message.id} className="flex gap-3">
+              {/* User Avatar */}
+              <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+                {message.user_avatar ? (
+                  <img src={message.user_avatar} alt={message.user_name} className="w-10 h-10 rounded-full" />
+                ) : (
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {message.user_name.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+
+              {/* Message Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-sm text-foreground">{message.user_name}</span>
+                  <span className="text-xs text-muted-foreground">{formatTimeAgo(message.created_at)}</span>
+                  
+                  {/* Message Type Badge */}
+                  <span className={`px-2 py-1 rounded-full text-xs border ${getMessageTypeColor(message.message_type)}`}>
+                    {getMessageTypeIcon(message.message_type)}
+                    <span className="ml-1">{getMessageTypeLabel(message.message_type)}</span>
+                  </span>
+
+                  {/* Edited Indicator */}
+                  {message.is_edited && (
+                    <span className="text-xs text-muted-foreground">(editat)</span>
+                  )}
+                </div>
+
+                {/* Message Text */}
+                {editingMessage?.id === message.id ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      className="flex-1 p-2 border border-input rounded-md bg-background text-sm"
+                      onKeyPress={(e) => e.key === 'Enter' && handleEditMessage()}
+                    />
+                    <button
+                      onClick={handleEditMessage}
+                      className="px-3 py-1 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
+                    >
+                      Salvează
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingMessage(null);
+                        setEditText('');
+                      }}
+                      className="px-3 py-1 bg-muted text-muted-foreground rounded-md text-sm hover:bg-muted/80"
+                    >
+                      Anulează
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-foreground mb-2">{message.message}</p>
+                )}
+
+                {/* Reactions */}
+                <div className="flex items-center gap-2">
+                  {(['like', 'heart', 'laugh', 'wow', 'sad', 'angry'] as ReactionType[]).map((reaction) => {
+                    const count = message[`${reaction}_count` as keyof ChatMessage] as number;
+                    const isActive = userReactions[message.id] === reaction;
+                    
+                    return (
+                      <button
+                        key={reaction}
+                        onClick={() => handleReaction(message.id, reaction)}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-full hover:bg-muted transition-colors ${
+                          isActive ? 'bg-primary/10' : ''
+                        }`}
+                        title={reaction.charAt(0).toUpperCase() + reaction.slice(1)}
+                      >
+                        <span className={getReactionColor(reaction, isActive)}>
+                          {getReactionIcon(reaction)}
+                        </span>
+                        {count > 0 && (
+                          <span className="text-xs text-muted-foreground">{count}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Action Buttons for Own Messages */}
+                {user && message.user_id === user.id && (
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => {
+                        setEditingMessage(message);
+                        setEditText(message.message);
+                      }}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMessage(message.id)}
+                      className="text-xs text-muted-foreground hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8">
+            <MessageCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">Nu există încă mesaje</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Fii primul care împărtășește ceva cu comunitatea!
+            </p>
+          </div>
+        )}
+        
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Message Input */}
+      <div className="p-4 border-t border-border bg-card">
+        <div className="flex gap-2">
+          {/* Message Type Selector */}
+          <select
+            value={selectedMessageType}
+            onChange={(e) => setSelectedMessageType(e.target.value as any)}
+            className="px-3 py-2 border border-input rounded-md bg-background text-sm"
+          >
+            <option value="text">Text</option>
+            <option value="info">Informație</option>
+            <option value="warning">Atenție</option>
+            <option value="tip">Sfat</option>
+          </select>
+
+          {/* Message Input */}
+          <input
+            type="text"
+            value={newMessage}
+            onChange={handleTyping}
+            placeholder="Scrie un mesaj..."
+            className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+          />
+
+          {/* Send Button */}
+          <button
+            onClick={handleSendMessage}
+            disabled={!newMessage.trim()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Send size={16} />
           </button>
         </div>
       </div>
-
-      <div className="flex-1 flex overflow-hidden">
-        {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {chatMessages.map(msg => <div key={msg.id} className={`flex gap-3 ${msg.isOwn ? 'flex-row-reverse' : ''}`}>
-                {/* Avatar */}
-                <div className="flex-shrink-0">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold relative ${msg.isOwn ? 'bg-gradient-to-br from-blue-500 to-purple-600' : 'bg-gradient-to-br from-green-500 to-emerald-600'}`}>
-                    {msg.user.initials}
-                    {msg.user.isOnline && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-background rounded-full"></div>}
-                  </div>
-                </div>
-
-                {/* Message Content */}
-                <div className={`flex-1 max-w-md ${msg.isOwn ? 'text-right' : ''}`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium text-foreground">
-                      {msg.user.name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {msg.timestamp}
-                    </span>
-                  </div>
-                  
-                  <div className={`p-3 rounded-lg ${msg.isOwn ? 'bg-primary text-primary-foreground ml-auto' : 'bg-muted'}`}>
-                    <p className="text-sm leading-relaxed">{msg.message}</p>
-                    
-                    {msg.location && <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/20">
-                        <MapPin size={12} className="text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {msg.location}
-                        </span>
-                      </div>}
-                  </div>
-
-                  {/* Reactions */}
-                  {msg.reactions.length > 0 && <div className="flex items-center gap-1 mt-1">
-                      <div className="flex items-center gap-1 bg-muted/50 rounded-full px-2 py-1">
-                        {msg.reactions.map((reaction: string, index: number) => <span key={index} className="text-xs">{reaction}</span>)}
-                        <span className="text-xs text-muted-foreground ml-1">
-                          {msg.reactionCount}
-                        </span>
-                      </div>
-                    </div>}
-                </div>
-              </div>)}
-            
-            {isTyping && <div className="flex gap-3">
-                <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse"></div>
-                </div>
-                <div className="bg-muted p-3 rounded-lg">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{
-                  animationDelay: '0.1s'
-                }}></div>
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{
-                  animationDelay: '0.2s'
-                }}></div>
-                  </div>
-                </div>
-              </div>}
-            
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Message Input */}
-          <div className="bg-card border-t border-border p-4">
-            <div className="flex items-end gap-3">
-              <button className="p-2 hover:bg-accent rounded-lg transition-colors">
-                <Paperclip size={20} className="text-muted-foreground" />
-              </button>
-              
-              <div className="flex-1 relative">
-                <textarea value={message} onChange={e => setMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder="Scrie un mesaj..." className="w-full p-3 bg-background border border-input rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent" rows={1} style={{
-                minHeight: '44px',
-                maxHeight: '120px'
-              }} />
-                <button className="absolute right-2 top-2 p-1 hover:bg-accent rounded transition-colors">
-                  <Smile size={16} className="text-muted-foreground" />
-                </button>
-              </div>
-              
-              <button onClick={handleSendMessage} disabled={!message.trim()} className="p-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                <Send size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Online Users Sidebar */}
-        <div className="hidden lg:block w-64 bg-card border-l border-border">
-          <div className="p-4 border-b border-border">
-            <h3 className="font-medium text-foreground mb-2">Utilizatori Online</h3>
-            <p className="text-sm text-muted-foreground">{onlineUsers.length} persoane</p>
-          </div>
-          
-          <div className="p-4 space-y-3 overflow-y-auto">
-            {onlineUsers.map((user, index) => <div key={index} className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                    {user.initials}
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-background rounded-full"></div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {user.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.status}
-                  </p>
-                </div>
-              </div>)}
-          </div>
-        </div>
-      </div>
-    </div>;
+    </div>
+  );
 }

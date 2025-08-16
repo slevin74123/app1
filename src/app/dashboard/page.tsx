@@ -126,14 +126,14 @@ const DashboardPage: React.FC = () => {
 
   return (
     <ProtectedRoute>
-      <div className="h-screen w-full bg-background flex overflow-hidden">
+      <div className="min-h-screen w-full bg-background flex flex-col lg:flex-row overflow-hidden">
         {/* Mobile Menu Overlay */}
         {isMobileMenuOpen && (
           <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={toggleMobileMenu} />
         )}
 
         {/* Left Sidebar - User Sidebar */}
-        <div className={`fixed lg:static inset-y-0 left-0 z-50 w-80 bg-card border-r border-border transform transition-transform duration-300 ease-in-out ${
+        <div className={`fixed lg:static inset-y-0 left-0 z-50 w-72 xl:w-80 bg-card border-r border-border transform transition-transform duration-300 ease-in-out ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}>
           <UserSidebar />
@@ -142,7 +142,7 @@ const DashboardPage: React.FC = () => {
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
-          <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between shadow-sm">
+          <header className="bg-card border-b border-border px-4 py-3 flex flex-wrap items-center gap-3 justify-between shadow-sm">
             {/* Left side - Breadcrumbs and Mobile Menu */}
             <div className="flex items-center gap-4">
               <button 
@@ -164,7 +164,7 @@ const DashboardPage: React.FC = () => {
             </div>
             
             {/* Center - Search Bar */}
-            <div className="flex-1 max-w-md mx-4">
+            <div className="flex-1 w-full sm:w-auto max-w-full sm:max-w-md mx-0 sm:mx-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
                 <input
@@ -186,7 +186,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Right side - Filters, Notifications, User Avatar */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
               {/* Filter Button */}
               <button
                 onClick={toggleFilter}
@@ -268,7 +268,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Right Sidebar - App Functions */}
-        <div className="hidden xl:block w-80 bg-card border-l border-border">
+        <div className="w-full lg:w-72 xl:w-80 bg-card border-t lg:border-t-0 lg:border-l border-border">
           <AppFunctionsSidebar />
         </div>
       </div>

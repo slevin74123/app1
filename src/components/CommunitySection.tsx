@@ -13,7 +13,7 @@ interface CommunityMessage {
   timestamp: string;
   location: string;
 }
-interface CommunitySectionProps {}
+type CommunitySectionProps = Record<string, never>;
 const CommunitySection: React.FC<CommunitySectionProps> = () => {
   // Mock community messages data
   const communityMessages: CommunityMessage[] = [{

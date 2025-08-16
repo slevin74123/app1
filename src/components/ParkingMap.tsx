@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
+import { googleMapsLoader as loader } from '@/lib/googleMapsLoader';
 import { Search, Filter, X, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,12 +13,7 @@ import { Label } from '@/components/ui/label';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GOOGLE_MAPS_API_KEY } from "@/config/maps";
 
-// Create the Loader instance ONCE at module level
-const loader = new Loader({
-  apiKey: GOOGLE_MAPS_API_KEY,
-  version: 'weekly',
-  libraries: ['places']
-});
+// Use shared loader singleton to avoid duplicate script injections
 
 // Add Google Maps types at the top of the file
 interface GoogleMapsMap {
@@ -43,6 +38,25 @@ interface GoogleMapsAPI {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Marker: new (options: any) => GoogleMapsMarker;
     InfoWindow: new () => GoogleMapsInfoWindow;
+    // Modern Routes API
+    Routes: {
+      RouteService: new () => any;
+    };
+    // Legacy APIs (kept for compatibility but not recommended)
+    DirectionsService: new () => any;
+    DirectionsRenderer: new (options: any) => any;
+    TravelMode: {
+      DRIVING: any;
+      WALKING: any;
+      BICYCLING: any;
+      TRANSIT: any;
+    };
+    LatLngBounds: new () => any;
+    Polyline: new (options: any) => any;
+    event: {
+      addListener: (instance: any, eventName: string, handler: () => void) => any;
+      removeListener: (listener: any) => void;
+    };
     SymbolPath: {
       CIRCLE: number;
     };
@@ -284,9 +298,16 @@ export default function ParkingMap({ className, userLocation, user }: ParkingMap
         const google = await loader.load();
         console.log('✅ Google Maps API loaded successfully');
         
+        // Import the required libraries explicitly for v3.53+
+        // @ts-ignore - importLibrary is available at runtime
+        const { Map, InfoWindow } = await google.maps.importLibrary('maps') as unknown as {
+          Map: new (element: HTMLElement, options: any) => GoogleMapsMap;
+          InfoWindow: new () => GoogleMapsInfoWindow;
+        };
+        
         if (mapRef.current) {
           console.log('🗺️ Creating map instance...');
-          const map = new google.maps.Map(mapRef.current, {
+          const map = new Map(mapRef.current, {
             center: { lat: 44.4268, lng: 26.1025 }, // Bucharest center
             zoom: 14,
             styles: [
@@ -301,8 +322,8 @@ export default function ParkingMap({ className, userLocation, user }: ParkingMap
             streetViewControl: false
           });
 
-          mapInstanceRef.current = map;
-          infoWindowRef.current = new google.maps.InfoWindow();
+          mapInstanceRef.current = map as unknown as GoogleMapsMap;
+          infoWindowRef.current = new InfoWindow();
           setIsMapLoaded(true);
           setApiKeyStatus('valid');
           console.log('✅ Map initialized successfully');
