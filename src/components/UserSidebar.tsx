@@ -138,6 +138,31 @@ const UserSidebar: React.FC = () => {
             
             {/* Common Chat Messages section removed */}
           </li>
+
+          <li>
+            <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors group" onClick={() => {
+            setActiveSection(activeSection === 'my-alerts' ? null : 'my-alerts');
+            // Trigger display change in main dashboard to show my alerts
+            window.dispatchEvent(new CustomEvent('showMyAlerts', {
+              detail: {
+                show: activeSection !== 'my-alerts'
+              }
+            }));
+          }}>
+              <div className="p-2 rounded-lg bg-muted/50 group-hover:bg-background text-orange-600">
+                <Bell size={18} />
+              </div>
+              <div className="flex-1 text-left">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-foreground">Alertele Mele</span>
+                  <span className="text-xs bg-orange-600 text-white px-2 py-1 rounded-full">
+                    3
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">Gestionează alertele tale de parcare</p>
+              </div>
+            </button>
+          </li>
         </ul>
       </nav>
 

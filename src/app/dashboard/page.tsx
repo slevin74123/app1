@@ -9,6 +9,7 @@ import UserSidebar from '@/components/UserSidebar';
 import MyParkingsView from '@/components/MyParkingsView';
 import CommonChatView from '@/components/CommonChatView';
 import CommunityWallView from '@/components/CommunityWallView';
+import MyAlertsView from '@/components/MyAlertsView';
 import AppFunctionsSidebar from '@/components/AppFunctionsSidebar';
 
 export default function DashboardPage() {
@@ -25,6 +26,7 @@ export default function DashboardPage() {
   const [showCommonChat, setShowCommonChat] = useState(false);
   const [showCommunityWall, setShowCommunityWall] = useState(false);
   const [showNearbyParking, setShowNearbyParking] = useState(false);
+  const [showMyAlerts, setShowMyAlerts] = useState(false);
 
   useEffect(() => {
     // Event listeners pentru navigarea din sidebar
@@ -54,6 +56,15 @@ export default function DashboardPage() {
       setShowMyParkings(false);
       setShowCommonChat(false);
       setShowCommunityWall(false);
+      setShowMyAlerts(false);
+    };
+
+    const handleShowMyAlerts = (event: CustomEvent) => {
+      setShowMyAlerts(event.detail.show);
+      setShowMyParkings(false);
+      setShowCommonChat(false);
+      setShowCommunityWall(false);
+      setShowNearbyParking(false);
     };
 
     // Adaugă event listeners
@@ -61,6 +72,7 @@ export default function DashboardPage() {
     window.addEventListener('showCommonChat', handleShowCommonChat as EventListener);
     window.addEventListener('showCommunityWall', handleShowCommunityWall as EventListener);
     window.addEventListener('showNearbyParking', handleShowNearbyParking as EventListener);
+    window.addEventListener('showMyAlerts', handleShowMyAlerts as EventListener);
 
     // Cleanup
     return () => {
@@ -68,6 +80,7 @@ export default function DashboardPage() {
       window.removeEventListener('showCommonChat', handleShowCommonChat as EventListener);
       window.removeEventListener('showCommunityWall', handleShowCommunityWall as EventListener);
       window.removeEventListener('showNearbyParking', handleShowNearbyParking as EventListener);
+      window.removeEventListener('showMyAlerts', handleShowMyAlerts as EventListener);
     };
   }, []);
 
@@ -89,6 +102,10 @@ export default function DashboardPage() {
 
     if (showCommunityWall) {
       return <CommunityWallView />;
+    }
+
+    if (showMyAlerts) {
+      return <MyAlertsView />;
     }
 
     // Altfel, afișează conținutul normal (hartă)
@@ -148,7 +165,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Right Sidebar - App Functions (doar când nu sunt afișate view-urile speciale) */}
-      {!showMyParkings && !showCommonChat && !showCommunityWall && (
+      {!showMyParkings && !showCommonChat && !showCommunityWall && !showMyAlerts && (
         <div className="w-full lg:w-72 xl:w-80 bg-card border-t lg:border-t-0 lg:border-l border-border">
           <AppFunctionsSidebar />
         </div>

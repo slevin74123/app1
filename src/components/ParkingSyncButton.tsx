@@ -1,14 +1,17 @@
 "use client";
 
 import React, { useState } from 'react';
-import { RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { ParkingSyncService } from '@/lib/parkingSyncService';
 import { toast } from 'sonner';
+import { activityService } from '@/lib/activityService';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ParkingSyncButton() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const { user } = useAuth();
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -21,6 +24,15 @@ export default function ParkingSyncButton() {
         setSyncStatus('success');
         setLastSync(new Date());
         toast.success(`Sincronizare completă! ${result.count} parcări noi adăugate.`);
+        
+        // Creează activitate pentru sincronizarea parcărilor
+        if (user && result.count && result.count > 0) {
+          await activityService.communityUpdateActivity(
+            user.id,
+            'București',
+            `Sincronizare automată: ${result.count} parcări noi adăugate în baza de date`
+          );
+        }
       } else {
         setSyncStatus('error');
         toast.error(`Eroare la sincronizare: ${result.error}`);
@@ -56,14 +68,12 @@ export default function ParkingSyncButton() {
       {/* Status indicator */}
       {syncStatus === 'success' && (
         <div className="flex items-center gap-1 text-green-600">
-          <CheckCircle size={16} />
           <span className="text-xs">Sincronizat</span>
         </div>
       )}
 
       {syncStatus === 'error' && (
         <div className="flex items-center gap-1 text-red-600">
-          <AlertCircle size={16} />
           <span className="text-xs">Eroare</span>
         </div>
       )}

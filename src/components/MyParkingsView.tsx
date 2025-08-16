@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Car, Clock, MapPin, Calendar, CreditCard, TrendingUp, BarChart3, Activity, Heart, Star } from 'lucide-react';
+import { Car, Clock, MapPin, Calendar, CreditCard, TrendingUp, BarChart3, Activity, Heart, Star, ArrowLeft } from 'lucide-react';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { cn } from '@/lib/utils';
 

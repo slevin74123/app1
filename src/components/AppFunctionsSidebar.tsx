@@ -1,16 +1,31 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Plus, Search, AlertTriangle, Users, TrendingUp, MapPin, Clock, MessageSquare } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, AlertTriangle, MapPin, Clock, MessageSquare } from 'lucide-react';
 import ParkingSearchBar from './ParkingSearchBar';
 import { type SearchResult } from '@/lib/parkingService';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { activityService, type ActivityItem } from '@/lib/activityService';
+import { alertsService } from '@/lib/alertsService';
+import { useRealTimeActivities } from '@/hooks/useRealTimeActivities';
 
 export default function AppFunctionsSidebar() {
   const [activeFunction, setActiveFunction] = useState<string | null>(null);
   const [selectedParkingLocation, setSelectedParkingLocation] = useState<SearchResult | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<string>('60');
+  const [selectedMaxPrice, setSelectedMaxPrice] = useState<string>('10');
   const { user } = useAuth();
+  
+  // Hook pentru activități în timp real
+  const { activities: recentActivities, isLoading: isLoadingActivities, refresh: refreshActivities } = useRealTimeActivities(5, 30000);
+
+  // Funcție pentru a reveni la dashboard
+  const handleBackToDashboard = () => {
+    window.dispatchEvent(new CustomEvent('showCommonChat', {
+      detail: { show: false }
+    }));
+  };
 
   const mainFunctions = [{
     id: 'report',
@@ -20,36 +35,12 @@ export default function AppFunctionsSidebar() {
     color: 'bg-green-500',
     textColor: 'text-green-600'
   }, {
-    id: 'find',
-    icon: Search,
-    title: 'Găsește un Loc',
-    description: 'Primește recomandări personalizate de parcare',
-    color: 'bg-purple-500',
-    textColor: 'text-purple-600'
-  }, {
     id: 'alert',
     icon: AlertTriangle,
     title: 'Alertă Parcări',
     description: 'Creează alerte pentru locuri de parcare',
     color: 'bg-orange-500',
     textColor: 'text-orange-600'
-  }] as any[];
-
-  const quickActions = [{
-    icon: AlertTriangle,
-    title: 'Raportează Problemă',
-    description: 'Raportează încălcări sau probleme de parcare',
-    count: null
-  }, {
-    icon: Users,
-    title: 'Feed Comunitate',
-    description: 'Vezi ce împărtășesc alții',
-    count: 12
-  }, {
-    icon: TrendingUp,
-    title: 'Ore de Vârf',
-    description: 'Vezi orele aglomerate de parcare',
-    count: null
   }] as any[];
 
   const recentActivity = [{
@@ -73,24 +64,75 @@ export default function AppFunctionsSidebar() {
     setActiveFunction(activeFunction === functionId ? null : functionId);
   };
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'report':
-        return <Plus size={12} className="text-green-600" />;
-      case 'update':
-        return <MessageSquare size={12} className="text-blue-600" />;
-      case 'reservation':
-        return <Clock size={12} className="text-purple-600" />;
+  const getActivityIcon = (actionType: string) => {
+    switch (actionType) {
+      case 'parking_reported':
+        return <div className="p-2 rounded-lg bg-green-100"><Plus className="w-4 h-4 text-green-600" /></div>;
+      case 'community_update':
+        return <div className="p-2 rounded-lg bg-blue-100"><MessageSquare className="w-4 h-4 text-blue-600" /></div>;
+      case 'parking_reserved':
+        return <div className="p-2 rounded-lg bg-purple-100"><Clock className="w-4 h-4 text-purple-600" /></div>;
+      case 'alert_created':
+        return <div className="p-2 rounded-lg bg-orange-100"><AlertTriangle className="w-4 h-4 text-orange-600" /></div>;
+      case 'chat_message':
+        return <div className="p-2 rounded-lg bg-indigo-100"><MessageSquare className="w-4 h-4 text-indigo-600" /></div>;
       default:
-        return <MapPin size={12} className="text-muted-foreground" />;
+        return <div className="p-2 rounded-lg bg-gray-100"><MessageSquare className="w-4 h-4 text-gray-600" /></div>;
     }
   };
 
-  const handleReportParking = () => {
+  const getActivityText = (actionType: string) => {
+    switch (actionType) {
+      case 'parking_reported':
+        return 'Loc nou raportat';
+      case 'community_update':
+        return 'Actualizare comunitate';
+      case 'parking_reserved':
+        return 'Loc rezervat';
+      case 'alert_created':
+        return 'Alertă creată';
+      case 'chat_message':
+        return 'Mesaj chat';
+      default:
+        return 'Activitate';
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Acum';
+    if (diffInMinutes < 60) return `acum ${diffInMinutes} min`;
+    if (diffInMinutes < 1440) return `acum ${Math.floor(diffInMinutes / 60)}h`;
+    return `acum ${Math.floor(diffInMinutes / 1440)} zile`;
+  };
+
+  const handleReportParking = async () => {
     if (selectedParkingLocation) {
-      toast.success(`Loc liber raportat pentru ${selectedParkingLocation.name}!`);
-      setSelectedParkingLocation(null);
-      setActiveFunction(null);
+      try {
+        // Creează activitate pentru locul raportat
+        if (user) {
+          await activityService.reportParkingActivity(
+            user.id,
+            selectedParkingLocation.name,
+            `Loc liber raportat în ${selectedParkingLocation.address}`
+          );
+        }
+        
+        toast.success(`Loc liber raportat pentru ${selectedParkingLocation.name}!`);
+        setSelectedParkingLocation(null);
+        setActiveFunction(null);
+        
+        // Reîncarcă activitățile recente
+        await refreshActivities();
+      } catch (error) {
+        console.error('Error creating activity:', error);
+        toast.success(`Loc liber raportat pentru ${selectedParkingLocation.name}!`);
+        setSelectedParkingLocation(null);
+        setActiveFunction(null);
+      }
     } else {
       toast.error('Te rog selectează o parcare din listă.');
     }
@@ -157,21 +199,6 @@ export default function AppFunctionsSidebar() {
           </div>
         )}
 
-        {activeFunction === 'find' && (
-          <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
-            <h3 className="font-medium mb-3">Găsește un Loc</h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              Această funcționalitate va fi implementată în curând.
-            </p>
-            <div className="p-3 bg-background rounded-lg border border-border">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock size={16} />
-                <span className="text-sm">În dezvoltare...</span>
-              </div>
-            </div>
-          </div>
-        )}
-
         {activeFunction === 'alert' && (
           <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
             <h3 className="font-medium mb-3">Alertă Parcări</h3>
@@ -196,8 +223,11 @@ export default function AppFunctionsSidebar() {
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium mb-2">Durata dorită</label>
-                  <select className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                    <option value="">Selectează durata</option>
+                  <select 
+                    value={selectedDuration}
+                    onChange={(e) => setSelectedDuration(e.target.value)}
+                    className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
                     <option value="30">30 minute</option>
                     <option value="60">1 oră</option>
                     <option value="120">2 ore</option>
@@ -207,8 +237,11 @@ export default function AppFunctionsSidebar() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Preț maxim (RON/oră)</label>
-                  <select className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                    <option value="">Selectează prețul</option>
+                  <select 
+                    value={selectedMaxPrice}
+                    onChange={(e) => setSelectedMaxPrice(e.target.value)}
+                    className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
                     <option value="5">5 RON/oră</option>
                     <option value="10">10 RON/oră</option>
                     <option value="15">15 RON/oră</option>
@@ -219,11 +252,41 @@ export default function AppFunctionsSidebar() {
                 </div>
               </div>
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (selectedParkingLocation) {
-                    toast.success(`Alertă creată pentru ${selectedParkingLocation.name}! Vei fi notificat când se raportează locuri libere.`);
-                    setSelectedParkingLocation(null);
-                    setActiveFunction(null);
+                    try {
+                      // Creează alerta în baza de date
+                      if (user) {
+                        const alertResult = await alertsService.createAlert({
+                          user_id: user.id,
+                          parking_name: selectedParkingLocation.name,
+                          location: selectedParkingLocation.address,
+                          duration_minutes: parseInt(selectedDuration),
+                          max_price_per_hour: parseFloat(selectedMaxPrice)
+                        });
+
+                        if (alertResult.success) {
+                          // Creează activitate pentru alerta creată
+                          await activityService.alertCreatedActivity(
+                            user.id,
+                            selectedParkingLocation.name,
+                            `Alertă creată pentru ${selectedParkingLocation.name}`
+                          );
+                          
+                          toast.success(`Alertă creată pentru ${selectedParkingLocation.name}! Vei fi notificat când se raportează locuri libere.`);
+                          setSelectedParkingLocation(null);
+                          setActiveFunction(null);
+                          
+                          // Reîncarcă activitățile recente
+                          await refreshActivities();
+                        } else {
+                          toast.error(`Eroare la crearea alertei: ${alertResult.error}`);
+                        }
+                      }
+                    } catch (error) {
+                      console.error('Error creating alert:', error);
+                      toast.error('Eroare neașteptată la crearea alertei');
+                    }
                   } else {
                     toast.error('Te rog selectează o parcare din listă.');
                   }
@@ -237,42 +300,30 @@ export default function AppFunctionsSidebar() {
           </div>
         )}
 
-        {/* Quick Actions */}
-        <div className="mb-6">
-          <h3 className="font-medium mb-3">Acțiuni Rapide</h3>
-          <div className="space-y-2">
-            {quickActions.map((action, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-                <div className="p-2 rounded-lg bg-muted">
-                  <action.icon size={16} className="text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-sm font-medium">{action.title}</h4>
-                  <p className="text-xs text-muted-foreground">{action.description}</p>
-                </div>
-                {action.count !== null && (
-                  <span className="px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full">
-                    {action.count}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Recent Activity */}
-        <div>
+        <div className="mb-6">
           <h3 className="font-medium mb-3">Activitate Recentă</h3>
           <div className="space-y-2">
-            {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                {getActivityIcon(activity.type)}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{activity.action}</p>
-                  <p className="text-xs text-muted-foreground truncate">{activity.location} • {activity.time}</p>
-                </div>
+            {isLoadingActivities ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                <p className="text-xs text-muted-foreground mt-2">Se încarcă...</p>
               </div>
-            ))}
+            ) : recentActivities.length > 0 ? (
+              recentActivities.map((activity, index) => (
+                <div key={index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                  {getActivityIcon(activity.action_type)}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{getActivityText(activity.action_type)}</p>
+                    <p className="text-xs text-muted-foreground truncate">{activity.location} • {formatTimeAgo(activity.created_at)}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-xs text-muted-foreground">Nu există activități recente</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

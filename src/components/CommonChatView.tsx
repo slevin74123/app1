@@ -18,7 +18,8 @@ import {
   Lightbulb,
   Type,
   Users,
-  Circle
+  Circle,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChatService, type ChatMessage, type CreateMessageData, type ReactionType, type OnlineUser } from '@/lib/chatService';
@@ -38,6 +39,13 @@ export default function CommonChatView() {
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Funcție pentru a reveni la dashboard
+  const handleBackToDashboard = () => {
+    window.dispatchEvent(new CustomEvent('showCommonChat', {
+      detail: { show: false }
+    }));
+  };
 
   // Load messages and online users on component mount
   useEffect(() => {
@@ -339,6 +347,13 @@ export default function CommonChatView() {
       <div className="p-4 border-b border-border bg-card">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <button
+              onClick={handleBackToDashboard}
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              title="Înapoi la Dashboard"
+            >
+              <ArrowLeft className="text-muted-foreground" size={20} />
+            </button>
             <div className="p-2 bg-green-100 rounded-lg">
               <MessageCircle className="text-green-600" size={20} />
             </div>

@@ -17,7 +17,8 @@ import {
   AlertTriangle,
   Lightbulb,
   HelpCircle,
-  MessageSquare
+  MessageSquare,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CommunityService, type CommunityPost, type CreatePostData, type ReactionType } from '@/lib/communityService';
@@ -34,6 +35,13 @@ export default function CommunityWallView() {
   });
   const [selectedPostType, setSelectedPostType] = useState<string>('all');
   const { user } = useAuth();
+
+  // Funcție pentru a reveni la dashboard
+  const handleBackToDashboard = () => {
+    window.dispatchEvent(new CustomEvent('showCommunityWall', {
+      detail: { show: false }
+    }));
+  };
 
   // Load posts on component mount
   useEffect(() => {
@@ -174,6 +182,13 @@ export default function CommunityWallView() {
       {/* Header */}
       <div className="p-6 border-b border-border bg-card">
         <div className="flex items-center gap-3 mb-4">
+          <button
+            onClick={handleBackToDashboard}
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            title="Înapoi la Dashboard"
+          >
+            <ArrowLeft className="text-muted-foreground" size={20} />
+          </button>
           <div className="p-3 bg-indigo-100 rounded-xl">
             <MessageCircle className="text-indigo-600" size={24} />
           </div>
