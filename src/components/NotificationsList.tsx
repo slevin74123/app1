@@ -1,25 +1,75 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, MapPin, Clock, DollarSign, X, CheckCircle, AlertTriangle } from 'lucide-react';
+import { NotificationService, type ParkingNotification } from '@/lib/notificationService';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 export default function NotificationsList() {
+  const [notifications, setNotifications] = useState<ParkingNotification[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
+  const { user } = useAuth();
 
-  // Mock data pentru testare
-  const mockNotifications = [
-    {
-      id: '1',
-      parking_name: 'Parcare Basarab',
-      duration: 120,
-      max_price: 20,
-      created_at: '2025-08-16T10:00:00Z',
-      is_active: true
+  useEffect(() => {
+    if (user) {
+      loadNotifications();
+    } else {
+      setLoading(false);
     }
-  ];
+  }, [user]);
 
-  const activeNotifications = mockNotifications.filter(n => n.is_active);
-  const inactiveNotifications = mockNotifications.filter(n => !n.is_active);
+  const loadNotifications = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const result = await NotificationService.getUserActiveNotifications(user.id);
+      
+      if (result.success && result.notifications) {
+        setNotifications(result.notifications);
+      } else {
+        console.error('Error loading notifications:', result.error);
+      }
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId: string) => {
+    try {
+      const result = await NotificationService.deleteNotification(notificationId);
+      
+      if (result.success) {
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        toast.success('Notificarea a fost ștearsă');
+      } else {
+        toast.error(`Eroare la ștergerea notificării: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast.error('Eroare la ștergerea notificării');
+    }
+  };
+
+  const handleDeactivateNotification = async (notificationId: string) => {
+    try {
+      const result = await NotificationService.deactivateParkingNotification(notificationId);
+      
+      if (result.success) {
+        toast.success('Notificarea a fost dezactivată');
+        loadNotifications(); // Reîncarcă notificările
+      } else {
+        toast.error(`Eroare la dezactivarea notificării: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error deactivating notification:', error);
+      toast.error('Eroare la dezactivarea notificării');
+    }
+  };
 
   const formatDuration = (minutes: number): string => {
     if (minutes < 60) return `${minutes} min`;
@@ -31,6 +81,33 @@ export default function NotificationsList() {
     if (price === 0) return 'Gratuit';
     return `${price} RON/oră`;
   };
+
+  // Verificări de siguranță pentru a evita erorile în timpul build-ului
+  const safeNotifications = notifications || [];
+  const activeNotifications = safeNotifications.filter(n => n && n.is_active === true) || [];
+  const inactiveNotifications = safeNotifications.filter(n => n && n.is_active === false) || [];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Se încarcă alertele...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <Bell size={48} className="text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Te rog să te conectezi pentru a vedea alertele.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -89,6 +166,7 @@ export default function NotificationsList() {
                     </div>
                     <div className="flex gap-2">
                       <button
+                        onClick={() => handleDeactivateNotification(notification.id)}
                         className="p-1 text-muted-foreground hover:text-foreground transition-colors"
                         title="Dezactivează alerta"
                       >
@@ -146,6 +224,7 @@ export default function NotificationsList() {
                     </div>
                     <div className="flex gap-2">
                       <button
+                        onClick={() => handleDeleteNotification(notification.id)}
                         className="p-1 text-muted-foreground hover:text-red-500 transition-colors"
                         title="Șterge alerta"
                       >

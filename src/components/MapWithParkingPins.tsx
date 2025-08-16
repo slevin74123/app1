@@ -552,10 +552,22 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
 
   // Filter spots based on search and filters
   const filteredSpots = parkingSpots.filter(spot => {
-    const matchesSearch = spot.name.toLowerCase().includes(searchQuery.toLowerCase()) || spot.address.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesPrice = spot.price >= filters.priceRange[0] && spot.price <= filters.priceRange[1];
-    const matchesAvailability = filters.availability === 'all' || spot.availability === filters.availability;
-    const matchesType = filters.type === 'all' || spot.type === filters.type;
+    const matchesSearch = searchQuery ? 
+      (spot.name.toLowerCase().includes(searchQuery.toLowerCase()) || spot.address.toLowerCase().includes(searchQuery.toLowerCase())) : 
+      true;
+    
+    const matchesPrice = filters?.priceRange && Array.isArray(filters.priceRange) && filters.priceRange.length === 2 ?
+      (spot.price >= filters.priceRange[0] && spot.price <= filters.priceRange[1]) : 
+      true;
+    
+    const matchesAvailability = filters?.availability && filters.availability !== 'all' ? 
+      spot.availability === filters.availability : 
+      true;
+    
+    const matchesType = filters?.type && filters.type !== 'all' ? 
+      spot.type === filters.type : 
+      true;
+    
     return matchesSearch && matchesPrice && matchesAvailability && matchesType;
   });
 
