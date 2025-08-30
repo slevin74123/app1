@@ -27,6 +27,18 @@ export default function DashboardPage() {
   const [showCommunityWall, setShowCommunityWall] = useState(false);
   const [showNearbyParking, setShowNearbyParking] = useState(false);
   const [showMyAlerts, setShowMyAlerts] = useState(false);
+  const [showAppFunctionsSidebar, setShowAppFunctionsSidebar] = useState(true);
+
+  // Mock user pentru demo (în producție ar trebui să vină din context)
+  const mockUser = {
+    id: 'user-1',
+    email: 'user@example.com',
+    name: 'Utilizator Demo'
+  };
+
+  const handleCloseAppFunctionsSidebar = () => {
+    setShowAppFunctionsSidebar(false);
+  };
 
   useEffect(() => {
     // Event listeners pentru navigarea din sidebar
@@ -165,9 +177,12 @@ export default function DashboardPage() {
       </div>
 
       {/* Right Sidebar - App Functions (doar când nu sunt afișate view-urile speciale) */}
-      {!showMyParkings && !showCommonChat && !showCommunityWall && !showMyAlerts && (
+      {!showMyParkings && !showCommonChat && !showCommunityWall && !showMyAlerts && showAppFunctionsSidebar && (
         <div className="w-full lg:w-72 xl:w-80 bg-card border-t lg:border-t-0 lg:border-l border-border">
-          <AppFunctionsSidebar />
+          <AppFunctionsSidebar 
+            user={mockUser}
+            onClose={handleCloseAppFunctionsSidebar}
+          />
         </div>
       )}
     </div>

@@ -1,25 +1,24 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Navigation, Zap, Clock, DollarSign, Star, Heart, Car } from 'lucide-react';
+import { MapPin, Zap, Clock, DollarSign, Star, Heart, Car } from 'lucide-react';
 import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 import { googleMapsLoader as loader } from '@/lib/googleMapsLoader';
-import { getApiConfig } from '@/config/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { registerAndSubscribePush } from '@/lib/pushClient';
 import { useFavorites } from '@/contexts/FavoritesContext';
+import { ParkingSpotService } from '@/lib/parkingSpotService';
+import { ParkingService } from '@/lib/parkingService';
 
-interface ParkingSpot {
+interface ParkingLocationWithStats {
   id: string;
   name: string;
   address: string;
-  lat: number;
-  lng: number;
-  price: number;
-  rating: number;
-  availability: 'available' | 'reserved' | 'occupied';
-  type: 'street' | 'garage' | 'lot';
-  distance: string;
+  latitude: number;
+  longitude: number;
+  total_spots: number;
+  available_spots: number;
+  reserved_spots: number;
+  occupied_spots: number;
 }
 
 interface MapWithParkingPinsProps {
@@ -39,32 +38,178 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
   searchQuery,
   filters
 }) => {
-  const [selectedSpot, setSelectedSpot] = useState<ParkingSpot | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState<ParkingLocationWithStats | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [directions, setDirections] = useState<any>(null);
   const [isLoadingDirections, setIsLoadingDirections] = useState(false);
+  const [parkingLocations, setParkingLocations] = useState<ParkingLocationWithStats[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const directionsRendererRef = useRef<any>(null);
-  const directionsServiceRef = useRef<any>(null);
 
   const { user } = useAuth?.() || { user: null } as any;
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
 
-  const handleEnableAlerts = async () => {
-    const publicKey = (getApiConfig('PUSH_NOTIFICATIONS') as { VAPID_PUBLIC_KEY: string }).VAPID_PUBLIC_KEY;
+  // Set mounted state
+  useEffect(() => {
+    setIsMounted(true);
+    console.log('🚀 MapWithParkingPins component mounted');
+    
+    // Add global debug function for testing
+    (window as any).debugGoogleMaps = () => {
+      console.log('🔍 Debug Google Maps API:');
+      console.log('📍 window.google:', window.google);
+      console.log('📍 window.google.maps:', window.google?.maps);
+      console.log('📍 window.google.maps.Map:', window.google?.maps?.Map);
+      console.log('📍 window.google.maps.Marker:', window.google?.maps?.Marker);
+      console.log('📍 mapRef.current:', mapRef.current);
+      console.log('📍 mapInstanceRef.current:', mapInstanceRef.current);
+      console.log('📍 parkingLocations:', parkingLocations);
+    };
+    
+    // Add function to check database parking locations
+    (window as any).checkDatabaseParkings = async () => {
+      console.log('🔍 Checking database parking locations...');
+      try {
+        const result = await ParkingService.getAllParkingLocations();
+        if (result.success && result.data) {
+          console.log('✅ Database parking locations:', result.data);
+          console.log('📍 Total locations:', result.data.length);
+          result.data.forEach((location, index) => {
+            console.log(`📍 Location ${index + 1}:`, {
+              id: location.id,
+              name: location.name,
+              address: location.address,
+              city: location.city,
+              district: location.district,
+              coordinates: location.latitude && location.longitude ? 
+                `${location.latitude}, ${location.longitude}` : 'Missing coordinates'
+            });
+          });
+        } else {
+          console.log('❌ No database parking locations found');
+        }
+      } catch (error) {
+        console.error('❌ Error checking database:', error);
+      }
+    };
+    
+    return () => {
+      setIsMounted(false);
+      console.log('🔌 MapWithParkingPins component unmounting');
+      delete (window as any).debugGoogleMaps;
+      delete (window as any).checkDatabaseParkings;
+    };
+  }, []);
+
+
+  // Funcție pentru încărcarea datelor de parcare din baza de date
+  const loadParkingData = async () => {
+    try {
+      console.log('📊 Loading parking data from database...');
+      
+      // Încearcă să obțin datele din baza de date
+      const result = await ParkingService.getAllParkingLocations();
+      
+      if (result.success && result.data && result.data.length > 0) {
+        console.log('✅ Found parking locations in database:', result.data.length);
+        
+        // Convertește datele din baza de date la formatul necesar
+        const dbParkingLocations = result.data.map(location => ({
+          id: location.id,
+          name: location.name,
+          address: location.address,
+          latitude: location.latitude || 44.4268, // Fallback la București dacă nu sunt coordonatele
+          longitude: location.longitude || 26.1025,
+          total_spots: location.total_spots || 10,
+          available_spots: location.available_spots || 5,
+          reserved_spots: 2, // Valori implicite pentru moment
+          occupied_spots: 3
+        }));
+        
+        console.log('📍 Database parking locations:', dbParkingLocations);
+        setParkingLocations(dbParkingLocations);
+        
+        // If map is already loaded, update markers
+        if (mapInstanceRef.current) {
+          console.log('🔄 Map already loaded, updating markers...');
+          updateMarkers();
+        }
+      } else {
+        console.log('⚠️ No parking locations in database, using fallback data');
+        console.log('📍 Fallback parkingSpots data:', parkingSpots);
+        
+        if (!parkingSpots || parkingSpots.length === 0) {
+          console.warn('⚠️ No fallback parking spots data available');
+          setParkingLocations([]);
+          return;
+        }
+        
+        // Validate parking spots data
+        const validSpots = parkingSpots.filter(spot => {
+          const isValid = spot && 
+            typeof spot.latitude === 'number' && 
+            typeof spot.longitude === 'number' &&
+            !isNaN(spot.latitude) && 
+            !isNaN(spot.longitude);
+          
+          if (!isValid) {
+            console.warn('⚠️ Invalid parking spot data:', spot);
+          }
+          
+          return isValid;
+        });
+        
+        console.log('✅ Valid fallback parking spots:', validSpots.length);
+        setParkingLocations(validSpots);
+        
+        // If map is already loaded, update markers
+        if (mapInstanceRef.current) {
+          console.log('🔄 Map already loaded, updating markers...');
+          updateMarkers();
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error in loadParkingData:', error);
+      console.log('🔄 Falling back to static data...');
+      
+      // Fallback la datele statice în caz de eroare
+      if (parkingSpots && parkingSpots.length > 0) {
+        setParkingLocations(parkingSpots);
+      } else {
+        setParkingLocations([]);
+      }
+    }
+  };
+
+  // Funcție pentru raportarea unui loc liber
+  const handleReportFreeSpot = async (parkingLocationId: string, spotNumber: string) => {
     if (!user?.id) {
-      alert('Trebuie să fii autentificat pentru a primi notificări.');
+      alert('Trebuie să fii autentificat pentru a raporta un loc liber.');
       return;
     }
-    const ok = await registerAndSubscribePush(user.id, publicKey);
-    if (ok) {
-      // Save simple preference placeholder via Supabase if desired
-      console.log('Push subscription saved');
-    } else {
-      console.log('Push subscription failed or denied');
+
+    try {
+      const result = await ParkingSpotService.reportFreeParkingSpot(
+        parkingLocationId,
+        spotNumber,
+        user.id,
+        'Raportat de utilizator'
+      );
+
+      if (result.success) {
+        // Reîncarcă datele pentru a actualiza statisticile
+        await loadParkingData();
+        alert('Loc liber raportat cu succes!');
+      } else {
+        alert(`Eroare la raportarea locului: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error reporting free spot:', error);
+      alert('Eroare la raportarea locului liber.');
     }
   };
 
@@ -100,7 +245,7 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
       // Create a simple route visualization using a polyline
       const routePath = [
         { lat: userLocation.lat, lng: userLocation.lng },
-        { lat: selectedSpot.lat, lng: selectedSpot.lng }
+        { lat: selectedSpot.latitude, lng: selectedSpot.longitude }
       ];
       
       // Create a polyline for the route
@@ -120,7 +265,7 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
       directionsRendererRef.current = routePolyline;
       
       // Create markers for start and end points
-      const startMarker = new window.google.maps.Marker({
+      const startMarker = new (window as any).google.maps.Marker({
         position: userLocation,
         map: mapInstanceRef.current,
         title: 'Pornire',
@@ -134,8 +279,8 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
         }
       });
       
-      const endMarker = new window.google.maps.Marker({
-        position: { lat: selectedSpot.lat, lng: selectedSpot.lng },
+      const endMarker = new (window as any).google.maps.Marker({
+        position: { lat: selectedSpot.latitude, lng: selectedSpot.longitude },
         map: mapInstanceRef.current,
         title: selectedSpot.name,
         icon: {
@@ -155,7 +300,7 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
       // Calculate bounds to center the map
       const bounds = new window.google.maps.LatLngBounds();
       bounds.extend(userLocation);
-      bounds.extend({ lat: selectedSpot.lat, lng: selectedSpot.lng });
+      bounds.extend({ lat: selectedSpot.latitude, lng: selectedSpot.longitude });
       
       // Center and zoom the map
       mapInstanceRef.current.fitBounds(bounds);
@@ -167,13 +312,13 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
         const currentBounds = mapInstanceRef.current.getBounds();
         if (currentBounds) {
           currentBounds.extend(userLocation);
-          currentBounds.extend({ lat: selectedSpot.lat, lng: selectedSpot.lng });
+          currentBounds.extend({ lat: selectedSpot.latitude, lng: selectedSpot.longitude });
           mapInstanceRef.current.fitBounds(currentBounds);
         }
       });
       
       // Calculate and display distance
-      const distance = calculateDistance(userLocation, { lat: selectedSpot.lat, lng: selectedSpot.lng });
+      const distance = calculateDistance(userLocation, { lat: selectedSpot.latitude, lng: selectedSpot.longitude });
       
       setIsLoadingDirections(false);
       setDirections({ route: true, distance }); // Include distance in the directions state
@@ -218,394 +363,406 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
   };
 
   // Parcări din București - 30 de locații distribuite uniform
-  const parkingSpots: ParkingSpot[] = [{
+  const parkingSpots: ParkingLocationWithStats[] = [{
     id: '1',
-    name: 'Parcare Piața Victoriei',
-    address: 'Piața Victoriei nr. 1, București',
-    lat: 44.4518,
-    lng: 26.0853,
-    price: 8,
-    rating: 4.2,
-    availability: 'available',
-    type: 'garage',
-    distance: '0.3 km'
+    name: 'Parcare 1',
+    address: 'Strada 1, București',
+    latitude: 44.4268,
+    longitude: 26.1025,
+    total_spots: 10,
+    available_spots: 5,
+    reserved_spots: 2,
+    occupied_spots: 3
   }, {
     id: '2',
-    name: 'Parcare Herastrau',
-    address: 'Șoseaua Nordului nr. 7-9, București',
-    lat: 44.4769,
-    lng: 26.0822,
-    price: 5,
-    rating: 4.5,
-    availability: 'available',
-    type: 'street',
-    distance: '0.8 km'
+    name: 'Parcare 2',
+    address: 'Strada 2, București',
+    latitude: 44.4300,
+    longitude: 26.1100,
+    total_spots: 15,
+    available_spots: 8,
+    reserved_spots: 3,
+    occupied_spots: 4
   }, {
     id: '3',
-    name: 'Garaj Centrul Vechi',
-    address: 'Strada Lipscani nr. 15, București',
-    lat: 44.4307,
-    lng: 26.1014,
-    price: 12,
-    rating: 4.0,
-    availability: 'reserved',
-    type: 'garage',
-    distance: '1.2 km'
+    name: 'Parcare 3',
+    address: 'Strada 3, București',
+    latitude: 44.4200,
+    longitude: 26.1200,
+    total_spots: 20,
+    available_spots: 12,
+    reserved_spots: 5,
+    occupied_spots: 3
   }, {
     id: '4',
-    name: 'Parcare Universitate',
-    address: 'Bulevardul Regina Elisabeta nr. 4-12, București',
-    lat: 44.4355,
-    lng: 26.1027,
-    price: 6,
-    rating: 3.8,
-    availability: 'available',
-    type: 'street',
-    distance: '1.5 km'
+    name: 'Parcare 4',
+    address: 'Strada 4, București',
+    latitude: 44.4250,
+    longitude: 26.1300,
+    total_spots: 10,
+    available_spots: 7,
+    reserved_spots: 2,
+    occupied_spots: 1
   }, {
     id: '5',
-    name: 'Parcare Romana',
-    address: 'Piața Romană nr. 6, București',
-    lat: 44.4506,
-    lng: 26.0969,
-    price: 10,
-    rating: 4.3,
-    availability: 'available',
-    type: 'garage',
-    distance: '0.9 km'
+    name: 'Parcare 5',
+    address: 'Strada 5, București',
+    latitude: 44.4270,
+    longitude: 26.1400,
+    total_spots: 15,
+    available_spots: 10,
+    reserved_spots: 3,
+    occupied_spots: 2
   }, {
     id: '6',
-    name: 'Parcare Amzei',
-    address: 'Bulevardul Magheru nr. 28-30, București',
-    lat: 44.4472,
-    lng: 26.0914,
-    price: 4,
-    rating: 3.9,
-    availability: 'occupied',
-    type: 'street',
-    distance: '1.1 km'
+    name: 'Parcare 6',
+    address: 'Strada 6, București',
+    latitude: 44.4280,
+    longitude: 26.1500,
+    total_spots: 20,
+    available_spots: 15,
+    reserved_spots: 4,
+    occupied_spots: 1
   }, {
     id: '7',
-    name: 'Parcare Unirii',
-    address: 'Piața Unirii nr. 1, București',
-    lat: 44.4267,
-    lng: 26.1025,
-    price: 9,
-    rating: 4.1,
-    availability: 'available',
-    type: 'lot',
-    distance: '0.7 km'
+    name: 'Parcare 7',
+    address: 'Strada 7, București',
+    latitude: 44.4290,
+    longitude: 26.1600,
+    total_spots: 10,
+    available_spots: 6,
+    reserved_spots: 2,
+    occupied_spots: 2
   }, {
     id: '8',
-    name: 'Garaj Cismigiu',
-    address: 'Bulevardul Regina Elisabeta nr. 38, București',
-    lat: 44.4364,
-    lng: 26.0936,
-    price: 11,
-    rating: 4.4,
-    availability: 'available',
-    type: 'garage',
-    distance: '0.6 km'
+    name: 'Parcare 8',
+    address: 'Strada 8, București',
+    latitude: 44.4300,
+    longitude: 26.1700,
+    total_spots: 15,
+    available_spots: 9,
+    reserved_spots: 3,
+    occupied_spots: 3
   }, {
     id: '9',
-    name: 'Parcare Obor',
-    address: 'Calea Obor nr. 10, București',
-    lat: 44.4513,
-    lng: 26.1264,
-    price: 7,
-    rating: 4.0,
-    availability: 'reserved',
-    type: 'street',
-    distance: '0.5 km'
+    name: 'Parcare 9',
+    address: 'Strada 9, București',
+    latitude: 44.4310,
+    longitude: 26.1800,
+    total_spots: 20,
+    available_spots: 13,
+    reserved_spots: 5,
+    occupied_spots: 2
   }, {
     id: '10',
-    name: 'Parcare Floreasca',
-    address: 'Șoseaua Floreasca nr. 169A, București',
-    lat: 44.4847,
-    lng: 26.1025,
-    price: 8,
-    rating: 4.2,
-    availability: 'available',
-    type: 'garage',
-    distance: '0.4 km'
+    name: 'Parcare 10',
+    address: 'Strada 10, București',
+    latitude: 44.4320,
+    longitude: 26.1900,
+    total_spots: 10,
+    available_spots: 7,
+    reserved_spots: 2,
+    occupied_spots: 1
   }, {
     id: '11',
-    name: 'Parcare Vitan',
-    address: 'Calea Vitan nr. 55-59, București',
-    lat: 44.4086,
-    lng: 26.1264,
-    price: 5,
-    rating: 3.7,
-    availability: 'available',
-    type: 'street',
-    distance: '1.3 km'
+    name: 'Parcare 11',
+    address: 'Strada 11, București',
+    latitude: 44.4330,
+    longitude: 26.2000,
+    total_spots: 15,
+    available_spots: 10,
+    reserved_spots: 3,
+    occupied_spots: 2
   }, {
     id: '12',
-    name: 'Garaj Aviatorilor',
-    address: 'Bulevardul Aviatorilor nr. 40, București',
-    lat: 44.4675,
-    lng: 26.0822,
-    price: 14,
-    rating: 4.6,
-    availability: 'available',
-    type: 'garage',
-    distance: '1.0 km'
+    name: 'Parcare 12',
+    address: 'Strada 12, București',
+    latitude: 44.4340,
+    longitude: 26.2100,
+    total_spots: 20,
+    available_spots: 15,
+    reserved_spots: 4,
+    occupied_spots: 1
   }, {
     id: '13',
-    name: 'Parcare Dristor',
-    address: 'Calea Dudești nr. 121, București',
-    lat: 44.4086,
-    lng: 26.1503,
-    price: 6,
-    rating: 3.5,
-    availability: 'occupied',
-    type: 'lot',
-    distance: '1.2 km'
+    name: 'Parcare 13',
+    address: 'Strada 13, București',
+    latitude: 44.4350,
+    longitude: 26.2200,
+    total_spots: 10,
+    available_spots: 6,
+    reserved_spots: 2,
+    occupied_spots: 2
   }, {
     id: '14',
-    name: 'Parcare Calea Victoriei',
-    address: 'Calea Victoriei nr. 120, București',
-    lat: 44.4364,
-    lng: 26.0969,
-    price: 7,
-    rating: 3.8,
-    availability: 'available',
-    type: 'street',
-    distance: '1.1 km'
+    name: 'Parcare 14',
+    address: 'Strada 14, București',
+    latitude: 44.4360,
+    longitude: 26.2300,
+    total_spots: 15,
+    available_spots: 9,
+    reserved_spots: 3,
+    occupied_spots: 3
   }, {
     id: '15',
-    name: 'Garaj Dorobanti',
-    address: 'Calea Dorobanți nr. 239, București',
-    lat: 44.4675,
-    lng: 26.1025,
-    price: 9,
-    rating: 4.1,
-    availability: 'available',
-    type: 'garage',
-    distance: '1.0 km'
+    name: 'Parcare 15',
+    address: 'Strada 15, București',
+    latitude: 44.4370,
+    longitude: 26.2400,
+    total_spots: 20,
+    available_spots: 13,
+    reserved_spots: 5,
+    occupied_spots: 2
   }, {
     id: '16',
-    name: 'Parcare Titan',
-    address: 'Bulevardul Iuliu Maniu nr. 59, București',
-    lat: 44.4513,
-    lng: 26.1264,
-    price: 8,
-    rating: 4.0,
-    availability: 'available',
-    type: 'street',
-    distance: '0.8 km'
+    name: 'Parcare 16',
+    address: 'Strada 16, București',
+    latitude: 44.4380,
+    longitude: 26.2500,
+    total_spots: 10,
+    available_spots: 7,
+    reserved_spots: 2,
+    occupied_spots: 1
   }, {
     id: '17',
-    name: 'Garaj Militari',
-    address: 'Bulevardul Militari nr. 160, București',
-    lat: 44.4675,
-    lng: 26.0469,
-    price: 10,
-    rating: 4.3,
-    availability: 'available',
-    type: 'garage',
-    distance: '0.9 km'
+    name: 'Parcare 17',
+    address: 'Strada 17, București',
+    latitude: 44.4390,
+    longitude: 26.2600,
+    total_spots: 15,
+    available_spots: 10,
+    reserved_spots: 3,
+    occupied_spots: 2
   }, {
     id: '18',
-    name: 'Parcare Berceni',
-    address: 'Calea Berceni nr. 45, București',
-    lat: 44.4086,
-    lng: 26.1503,
-    price: 6,
-    rating: 3.6,
-    availability: 'reserved',
-    type: 'lot',
-    distance: '1.1 km'
+    name: 'Parcare 18',
+    address: 'Strada 18, București',
+    latitude: 44.4400,
+    longitude: 26.2700,
+    total_spots: 20,
+    available_spots: 15,
+    reserved_spots: 4,
+    occupied_spots: 1
   }, {
     id: '19',
-    name: 'Parcare Pantelimon',
-    address: 'Șoseaua Pantelimon nr. 60, București',
-    lat: 44.4513,
-    lng: 26.1503,
-    price: 7,
-    rating: 3.9,
-    availability: 'available',
-    type: 'street',
-    distance: '0.7 km'
+    name: 'Parcare 19',
+    address: 'Strada 19, București',
+    latitude: 44.4410,
+    longitude: 26.2800,
+    total_spots: 10,
+    available_spots: 6,
+    reserved_spots: 2,
+    occupied_spots: 2
   }, {
     id: '20',
-    name: 'Garaj Colentina',
-    address: 'Bulevardul Colentina nr. 15, București',
-    lat: 44.4847,
-    lng: 26.1264,
-    price: 9,
-    rating: 4.2,
-    availability: 'available',
-    type: 'garage',
-    distance: '0.6 km'
+    name: 'Parcare 20',
+    address: 'Strada 20, București',
+    latitude: 44.4420,
+    longitude: 26.2900,
+    total_spots: 15,
+    available_spots: 9,
+    reserved_spots: 3,
+    occupied_spots: 3
   }, {
     id: '21',
-    name: 'Parcare Stefan cel Mare',
-    address: 'Bulevardul Ștefan cel Mare nr. 25, București',
-    lat: 44.4513,
-    lng: 26.0914,
-    price: 8,
-    rating: 4.1,
-    availability: 'available',
-    type: 'street',
-    distance: '0.5 km'
+    name: 'Parcare 21',
+    address: 'Strada 21, București',
+    latitude: 44.4430,
+    longitude: 26.3000,
+    total_spots: 20,
+    available_spots: 13,
+    reserved_spots: 5,
+    occupied_spots: 2
   }, {
     id: '22',
-    name: 'Parcare Basarab',
-    address: 'Piața Basarab nr. 1, București',
-    lat: 44.4267,
-    lng: 26.0736,
-    price: 11,
-    rating: 4.4,
-    availability: 'occupied',
-    type: 'lot',
-    distance: '0.8 km'
+    name: 'Parcare 22',
+    address: 'Strada 22, București',
+    latitude: 44.4440,
+    longitude: 26.3100,
+    total_spots: 10,
+    available_spots: 7,
+    reserved_spots: 2,
+    occupied_spots: 1
   }, {
     id: '23',
-    name: 'Garaj Gara de Nord',
-    address: 'Piața Gara de Nord nr. 1, București',
-    lat: 44.4364,
-    lng: 26.0736,
-    price: 12,
-    rating: 4.0,
-    availability: 'available',
-    type: 'garage',
-    distance: '0.4 km'
+    name: 'Parcare 23',
+    address: 'Strada 23, București',
+    latitude: 44.4450,
+    longitude: 26.3200,
+    total_spots: 15,
+    available_spots: 10,
+    reserved_spots: 3,
+    occupied_spots: 2
   }, {
     id: '24',
-    name: 'Parcare Piata Sudului',
-    address: 'Piața Sudului nr. 1, București',
-    lat: 44.4086,
-    lng: 26.1264,
-    price: 7,
-    rating: 3.8,
-    availability: 'available',
-    type: 'street',
-    distance: '0.9 km'
+    name: 'Parcare 24',
+    address: 'Strada 24, București',
+    latitude: 44.4460,
+    longitude: 26.3300,
+    total_spots: 20,
+    available_spots: 15,
+    reserved_spots: 4,
+    occupied_spots: 1
   }, {
     id: '25',
-    name: 'Parcare Drumul Taberei',
-    address: 'Bulevardul Timișoara nr. 26, București',
-    lat: 44.4086,
-    lng: 26.0469,
-    price: 10,
-    rating: 3.8,
-    availability: 'available',
-    type: 'lot',
-    distance: '0.4 km'
+    name: 'Parcare 25',
+    address: 'Strada 25, București',
+    latitude: 44.4470,
+    longitude: 26.3400,
+    total_spots: 10,
+    available_spots: 6,
+    reserved_spots: 2,
+    occupied_spots: 2
   }, {
     id: '26',
-    name: 'Parcare Tei',
-    address: 'Bulevardul Ion Mihalache nr. 61, București',
-    lat: 44.4847,
-    lng: 26.0969,
-    price: 9,
-    rating: 4.1,
-    availability: 'occupied',
-    type: 'street',
-    distance: '0.3 km'
+    name: 'Parcare 26',
+    address: 'Strada 26, București',
+    latitude: 44.4480,
+    longitude: 26.3500,
+    total_spots: 15,
+    available_spots: 9,
+    reserved_spots: 3,
+    occupied_spots: 3
   }, {
     id: '27',
-    name: 'Garaj Muncii',
-    address: 'Bulevardul Muncii nr. 12, București',
-    lat: 44.4086,
-    lng: 26.0914,
-    price: 11,
-    rating: 4.2,
-    availability: 'available',
-    type: 'garage',
-    distance: '0.6 km'
+    name: 'Parcare 27',
+    address: 'Strada 27, București',
+    latitude: 44.4490,
+    longitude: 26.3600,
+    total_spots: 20,
+    available_spots: 13,
+    reserved_spots: 5,
+    occupied_spots: 2
   }, {
     id: '28',
-    name: 'Parcare Iancului',
-    address: 'Piața Iancului nr. 15, București',
-    lat: 44.4267,
-    lng: 26.1264,
-    price: 8,
-    rating: 3.9,
-    availability: 'available',
-    type: 'street',
-    distance: '0.5 km'
+    name: 'Parcare 28',
+    address: 'Strada 28, București',
+    latitude: 44.4500,
+    longitude: 26.3700,
+    total_spots: 10,
+    available_spots: 7,
+    reserved_spots: 2,
+    occupied_spots: 1
   }, {
     id: '29',
-    name: 'Parcare Mosilor',
-    address: 'Calea Moșilor nr. 128, București',
-    lat: 44.4364,
-    lng: 26.1264,
-    price: 7,
-    rating: 3.7,
-    availability: 'reserved',
-    type: 'lot',
-    distance: '0.7 km'
+    name: 'Parcare 29',
+    address: 'Strada 29, București',
+    latitude: 44.4510,
+    longitude: 26.3800,
+    total_spots: 15,
+    available_spots: 10,
+    reserved_spots: 3,
+    occupied_spots: 2
   }, {
     id: '30',
-    name: 'Garaj Eroilor',
-    address: 'Piața Eroilor nr. 1, București',
-    lat: 44.4267,
-    lng: 26.0736,
-    price: 10,
-    rating: 4.0,
-    availability: 'available',
-    type: 'garage',
-    distance: '0.4 km'
+    name: 'Parcare 30',
+    address: 'Strada 30, București',
+    latitude: 44.4520,
+    longitude: 26.3900,
+    total_spots: 20,
+    available_spots: 15,
+    reserved_spots: 4,
+    occupied_spots: 1
   }];
 
-  // Filter spots based on search and filters
-  const filteredSpots = parkingSpots.filter(spot => {
+  // Helper functions pentru proprietățile derivate
+  const getAvailabilityStatus = (location: ParkingLocationWithStats) => {
+    if (location.available_spots > 0) return 'available';
+    if (location.reserved_spots > 0) return 'reserved';
+    return 'occupied';
+  };
+
+  const getLocationType = (location: ParkingLocationWithStats) => {
+    // Determină tipul locației bazat pe nume sau adresă
+    if (location.name.toLowerCase().includes('garaj') || location.name.toLowerCase().includes('garage')) {
+      return 'garage';
+    } else if (location.name.toLowerCase().includes('parcare') || location.name.toLowerCase().includes('parking')) {
+      return 'lot';
+    } else {
+      return 'street';
+    }
+  };
+
+  const getLocationPrice = (location: ParkingLocationWithStats) => {
+    // Preț implicit bazat pe tipul locației
+    const type = getLocationType(location);
+    switch (type) {
+      case 'garage':
+        return 12;
+      case 'lot':
+        return 8;
+      default:
+        return 6;
+    }
+  };
+
+  const getLocationRating = (location: ParkingLocationWithStats) => {
+    // Rating implicit bazat pe disponibilitate
+    if (location.available_spots > location.total_spots * 0.5) {
+      return 4.5;
+    } else if (location.available_spots > 0) {
+      return 4.0;
+    } else {
+      return 3.5;
+    }
+  };
+
+  const getLocationAvailability = (location: ParkingLocationWithStats) => {
+    return getAvailabilityStatus(location);
+  };
+
+  const getLocationDistance = (_location: ParkingLocationWithStats) => {
+    // Distanță implicită (în km)
+    return '0.5 km';
+  };
+
+  const getLocationPriceText = (location: ParkingLocationWithStats) => {
+    return `${getLocationPrice(location)} RON/ora`;
+  };
+
+  const getLocationRatingText = (location: ParkingLocationWithStats) => {
+    return `${getLocationRating(location)}/5`;
+  };
+
+  const getLocationTypeText = (location: ParkingLocationWithStats) => {
+    const type = getLocationType(location);
+    switch (type) {
+      case 'garage':
+        return 'Garaj';
+      case 'lot':
+        return 'Parcare';
+      default:
+        return 'Stradă';
+    }
+  };
+
+  // Filtrează locurile de parcare în funcție de query și filtre
+  const _filteredSpots = parkingLocations.filter(spot => {
     const matchesSearch = searchQuery ? 
       (spot.name.toLowerCase().includes(searchQuery.toLowerCase()) || spot.address.toLowerCase().includes(searchQuery.toLowerCase())) : 
       true;
     
-    const matchesPrice = filters?.priceRange && Array.isArray(filters.priceRange) && filters.priceRange.length === 2 ?
-      (spot.price >= filters.priceRange[0] && spot.price <= filters.priceRange[1]) : 
-      true;
+    const matchesAvailability = filters.availability === 'all' || 
+      getLocationAvailability(spot) === filters.availability;
     
-    const matchesAvailability = filters?.availability && filters.availability !== 'all' ? 
-      spot.availability === filters.availability : 
-      true;
+    const matchesType = filters.type === 'all' || 
+      getLocationType(spot) === filters.type;
     
-    const matchesType = filters?.type && filters.type !== 'all' ? 
-      spot.type === filters.type : 
-      true;
+    const matchesPrice = getLocationPrice(spot) >= filters.priceRange[0] && 
+      getLocationPrice(spot) <= filters.priceRange[1];
     
-    return matchesSearch && matchesPrice && matchesAvailability && matchesType;
+    return matchesSearch && matchesAvailability && matchesType && matchesPrice;
   });
 
   // Get available spots for bottom section
-  const availableSpots = filteredSpots.filter(spot => spot.availability === 'available').slice(0, 6);
-
-  const getAvailabilityColor = (availability: string) => {
-    switch (availability) {
-      case 'available':
-        return 'text-green-600';
-      case 'reserved':
-        return 'text-yellow-600';
-      case 'occupied':
-        return 'text-red-600';
-      default:
-        return 'text-gray-600';
-    }
-  };
-
-  const getAvailabilityBg = (availability: string) => {
-    switch (availability) {
-      case 'available':
-        return 'bg-green-100 border-green-300';
-      case 'reserved':
-        return 'bg-yellow-100 border-yellow-300';
-      case 'occupied':
-        return 'bg-red-100 border-red-300';
-      default:
-        return 'bg-gray-100 border-gray-300';
-    }
-  };
+  const availableSpots = parkingLocations.filter(spot => getLocationAvailability(spot) === 'available').slice(0, 6);
 
   const toggleFavorite = (spotId: string) => {
     // This function is now handled by the context
     console.log('Toggle favorite for spot:', spotId);
   };
 
-  const handleAddToFavorites = async (spot: ParkingSpot | null) => {
+  const handleAddToFavorites = async (spot: ParkingLocationWithStats) => {
     if (!spot || !user) {
       if (!user) {
         alert('Trebuie să fii autentificat pentru a adăuga favorite!');
@@ -623,9 +780,9 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
           parking_spot_id: spot.id,
           parking_name: spot.name,
           parking_address: spot.address,
-          parking_type: spot.type,
-          price: spot.price,
-          rating: spot.rating
+          parking_type: getLocationType(spot),
+          price: getLocationPrice(spot),
+          rating: getLocationRating(spot)
         });
 
         if (result.success) {
@@ -653,7 +810,7 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
     }
   };
 
-  const handleSpotSelection = (spot: ParkingSpot) => {
+  const handleSpotSelection = (spot: ParkingLocationWithStats) => {
     setSelectedSpot(spot);
     // Clear any existing directions when selecting a new spot
     clearDirections();
@@ -674,118 +831,376 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
 
   // Load Google Maps API
   useEffect(() => {
+    if (!isMounted) return;
+    
     if (!GOOGLE_MAPS_API_KEY) {
       setMapError('Google Maps API key is missing');
       return;
     }
 
+    let isMountedInEffect = true;
+    let isLoading = false;
+
     const loadAndInit = async () => {
+      if (isLoading) {
+        console.log('⚠️ Google Maps API loading already in progress, skipping...');
+        return;
+      }
+      
       try {
+        isLoading = true;
+        const startTime = Date.now();
+        console.log('🔄 Starting Google Maps API loading process...');
+        console.log('🔧 Loader state:', {
+          apiKey: GOOGLE_MAPS_API_KEY ? '✅ Set' : '❌ Missing',
+          loader: loader
+        });
+        
         // If already available, just init
-        if (window.google && window.google.maps) {
-          initializeMap();
+        if (window.google && window.google.maps && window.google.maps.Map) {
+          console.log('✅ Google Maps API already loaded, initializing map...');
+          if (isMountedInEffect && isMounted) {
+            initializeMap();
+          }
           return;
         }
-        await loader.load();
-        setMapLoaded(true);
-        initializeMap();
+        
+        console.log('🔄 Loading Google Maps API...');
+        console.log('🔑 API Key:', GOOGLE_MAPS_API_KEY.substring(0, 10) + '...');
+        console.log('🌐 Network status:', navigator.onLine ? 'Online' : 'Offline');
+        console.log('⏰ Start time:', new Date().toISOString());
+        
+        // Check if we can reach Google's servers
+        try {
+          const response = await fetch('https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_MAPS_API_KEY);
+          console.log('🌐 Google Maps API endpoint test:', response.status, response.statusText);
+        } catch (networkError) {
+          console.warn('⚠️ Network test failed:', networkError);
+        }
+        
+        try {
+          await loader.load();
+          const loadTime = Date.now() - startTime;
+          console.log(`✅ Google Maps API loaded successfully in ${loadTime}ms`);
+        } catch (loadError) {
+          console.error('❌ Loader.load() failed:', loadError);
+          throw loadError;
+        }
+        
+        // Test if the API is actually accessible
+        if (!window.google || !window.google.maps) {
+          throw new Error('Google Maps API not accessible after loading');
+        }
+        
+        console.log('🔍 Testing Google Maps API accessibility...');
+        console.log('📍 window.google:', window.google);
+        console.log('📍 window.google.maps:', window.google.maps);
+        console.log('📍 window.google.maps.Map:', window.google.maps.Map);
+        
+        if (!window.google.maps.Map) {
+          throw new Error('Google Maps Map constructor not available after loading');
+        }
+        
+        // Try to create a simple test instance to verify the API works
+        try {
+          console.log('🧪 Testing Google Maps API with a simple test...');
+          const testDiv = document.createElement('div');
+          testDiv.style.display = 'none';
+          testDiv.style.width = '100px';
+          testDiv.style.height = '100px';
+          document.body.appendChild(testDiv);
+          
+          console.log('🧪 Test div created:', testDiv);
+          console.log('🧪 Google Maps Map constructor:', window.google.maps.Map);
+          
+          const testMap = new window.google.maps.Map(testDiv, {
+            center: { lat: 0, lng: 0 },
+            zoom: 1
+          });
+          
+          console.log('✅ Test map created successfully:', testMap);
+          console.log('🧪 Test map created with properties:', {
+            center: { lat: 0, lng: 0 },
+            zoom: 1
+          });
+          
+          document.body.removeChild(testDiv);
+          console.log('🧪 Test div removed');
+          
+          // Test marker creation as well
+          try {
+            console.log('🧪 Testing marker creation...');
+            const testMarker = new window.google.maps.Marker({
+              position: { lat: 0, lng: 0 },
+              map: testMap,
+              title: 'Test Marker'
+            });
+            console.log('✅ Test marker created successfully:', testMarker);
+          } catch (markerTestError) {
+            console.error('❌ Test marker creation failed:', markerTestError);
+            throw new Error(`Google Maps Marker test failed: ${markerTestError instanceof Error ? markerTestError.message : String(markerTestError)}`);
+          }
+        } catch (testError) {
+          console.error('❌ Test map creation failed:', testError);
+          console.error('❌ Test error details:', {
+            name: testError instanceof Error ? testError.name : 'Unknown',
+            message: testError instanceof Error ? testError.message : String(testError),
+            stack: testError instanceof Error ? testError.stack : 'No stack trace'
+          });
+          throw new Error(`Google Maps API test failed: ${testError instanceof Error ? testError.message : String(testError)}`);
+        }
+        
+        // If we get here, the API is working, so initialize the map
+        console.log('✅ Google Maps API verified and working, initializing map...');
+        if (isMountedInEffect && isMounted) {
+          setMapLoaded(true);
+          initializeMap();
+        }
+        
       } catch (e) {
+        if (!isMountedInEffect || !isMounted) return;
+        
         const msg = e instanceof Error ? e.message : String(e);
         console.error('Failed to load Google Maps API:', msg);
-        setMapError('Failed to load Google Maps API');
+        console.error('Full error object:', e);
+        
+        // Try to provide more specific error information
+        if (msg.includes('network') || msg.includes('fetch')) {
+          setMapError('Network error: Unable to reach Google Maps API. Please check your internet connection.');
+        } else if (msg.includes('API key') || msg.includes('key')) {
+          setMapError('API key error: Invalid or missing Google Maps API key. Please check your configuration.');
+        } else if (msg.includes('quota') || msg.includes('limit')) {
+          setMapError('API quota exceeded: Google Maps API usage limit reached. Please try again later.');
+        } else {
+          setMapError(`Failed to load Google Maps API: ${msg}`);
+        }
+      } finally {
+        isLoading = false;
       }
     };
 
     loadAndInit();
-  }, []);
+
+    return () => {
+      isMountedInEffect = false;
+    };
+  }, [isMounted]);
 
   // Initialize map when API is loaded
   useEffect(() => {
+    if (!isMounted) return;
+    
     if (mapLoaded && mapRef.current && !mapInstanceRef.current) {
+      console.log('🔄 Map loaded effect triggered, initializing map...');
       initializeMap();
     }
-  }, [mapLoaded]);
+  }, [mapLoaded, isMounted]);
 
-  // Update markers when filtered spots change
+  // Update markers when parking locations change
   useEffect(() => {
+    if (!isMounted) return;
+    
     if (mapInstanceRef.current) {
       updateMarkers();
     }
-  }, [filteredSpots]);
+  }, [parkingLocations, isMounted]);
+
+  // Load parking data when component mounts
+  useEffect(() => {
+    if (!isMounted) return;
+    
+    console.log('🚀 Component mounted, loading parking data...');
+    // Delay loading parking data to ensure Google Maps API is loaded first
+    setTimeout(() => {
+      if (isMounted) {
+        loadParkingData();
+      }
+    }, 1000); // Wait 1 second for Google Maps API to load
+  }, [isMounted]);
+
+  // Listen for parking statistics updates
+  useEffect(() => {
+    const handleParkingStatsUpdated = (event: CustomEvent) => {
+      console.log('Parking update event received:', event.detail);
+      
+      // Reîmprospătează datele pentru a actualiza contoarele
+      // Aceasta va actualiza automat toate statisticile și contoarele
+      loadParkingData();
+    };
+
+    // Adaugă event listener pentru actualizarea datelor de parcare
+    window.addEventListener('parkingStatsUpdated', handleParkingStatsUpdated as EventListener);
+
+    // Cleanup la unmount
+    return () => {
+      window.removeEventListener('parkingStatsUpdated', handleParkingStatsUpdated as EventListener);
+    };
+  }, []);
+
+  // Toggle map type function
+  const toggleMapType = () => {
+    console.log('Toggle map type clicked');
+    // Implementează logica pentru schimbarea tipului hărții
+  };
 
   const initializeMap = async () => {
-    if (!mapRef.current || !(window as any).google) return;
+    console.log('🗺️ initializeMap called');
+    console.log('📍 mapRef.current:', mapRef.current);
+    console.log('📍 window.google:', (window as any).google);
+    console.log('📍 window.google.maps:', (window as any).google?.maps);
+    console.log('📍 window.google.maps.Map:', (window as any).google?.maps?.Map);
+    console.log('📍 window.google.maps.Marker:', (window as any).google?.maps?.Marker);
+    console.log('📍 window.google.maps.Size:', (window as any).google?.maps?.Size);
+    console.log('📍 window.google.maps.Point:', (window as any).google?.maps?.Point);
+    
+    if (!mapRef.current) {
+      console.log('❌ Missing mapRef');
+      return;
+    }
+    
+    if (!(window as any).google) {
+      console.log('❌ Google object not available');
+      return;
+    }
+    
+    if (!(window as any).google.maps) {
+      console.log('❌ Google Maps not available');
+      return;
+    }
+    
+    if (!(window as any).google.maps.Map) {
+      console.log('❌ Google Maps Map constructor not available');
+      setMapError('Google Maps Map constructor not available');
+      return;
+    }
 
-    // @ts-ignore - importLibrary available at runtime
-    const { Map } = await (window as any).google.maps.importLibrary('maps');
+    try {
+      const bucharest = { lat: 44.4268, lng: 26.1025 };
+      console.log('📍 Creating map centered on:', bucharest);
 
-    const bucharest = { lat: 44.4268, lng: 26.1025 };
+      const map = new (window as any).google.maps.Map(mapRef.current, {
+        center: bucharest,
+        zoom: 12,
+        styles: [
+          {
+            featureType: 'poi',
+            elementType: 'labels',
+            stylers: [{ visibility: 'off' }]
+          }
+        ]
+      });
 
-    const map = new Map(mapRef.current, {
-      center: bucharest,
-      zoom: 12,
-      styles: [
-        {
-          featureType: 'poi',
-          elementType: 'labels',
-          stylers: [{ visibility: 'off' }]
-        }
-      ]
-    });
-
-    mapInstanceRef.current = map;
-    updateMarkers();
+      console.log('✅ Map created:', map);
+      mapInstanceRef.current = map;
+      
+      console.log('🔄 Calling updateMarkers...');
+      updateMarkers();
+    } catch (error) {
+      console.error('❌ Error creating map:', error);
+      setMapError(`Failed to create map: ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
 
   const updateMarkers = async () => {
-    if (!mapInstanceRef.current) return;
+    console.log('🔄 updateMarkers called');
+    console.log('📍 mapInstanceRef.current:', mapInstanceRef.current);
+    console.log('📍 parkingLocations:', parkingLocations);
+    
+    if (!mapInstanceRef.current) {
+      console.log('❌ No map instance');
+      return;
+    }
 
-    // @ts-ignore - importLibrary available at runtime
-    const { Marker } = await (window as any).google.maps.importLibrary('marker');
+    if (!parkingLocations || parkingLocations.length === 0) {
+      console.log('⚠️ No parking locations to display');
+      return;
+    }
 
-    // Clear existing markers
-    markersRef.current.forEach(marker => marker.setMap(null));
-    markersRef.current = [];
+    try {
+      // Clear existing markers
+      console.log('🗑️ Clearing existing markers:', markersRef.current.length);
+      markersRef.current.forEach(marker => marker.setMap(null));
+      markersRef.current = [];
 
-    // Add new markers
-    filteredSpots.forEach(spot => {
-      const marker = new Marker({
-        position: { lat: spot.lat, lng: spot.lng },
-        map: mapInstanceRef.current,
-        title: spot.name,
-        icon: {
-          url: getMarkerIcon(spot.availability),
-          // @ts-ignore - Size and Point are in advanced libs but OK at runtime
-          scaledSize: new (window as any).google.maps.Size(32, 32),
-          anchor: new (window as any).google.maps.Point(16, 32)
+      // Add new markers
+      console.log('➕ Adding new markers for', parkingLocations.length, 'locations');
+      parkingLocations.forEach((spot, index) => {
+        try {
+          console.log(`📍 Creating marker ${index + 1}:`, {
+            name: spot.name,
+            lat: spot.latitude,
+            lng: spot.longitude,
+            availability: getLocationAvailability(spot),
+            iconUrl: getMarkerIcon(getLocationAvailability(spot))
+          });
+          
+          const marker = new (window as any).google.maps.Marker({
+            position: { lat: spot.latitude, lng: spot.longitude },
+            map: mapInstanceRef.current,
+            title: spot.name,
+            icon: {
+              url: getMarkerIcon(getLocationAvailability(spot)),
+              scaledSize: new (window as any).google.maps.Size(32, 32),
+              anchor: new (window as any).google.maps.Point(16, 32)
+            }
+          });
+
+          marker.addListener('click', () => {
+            setSelectedSpot(spot);
+          });
+
+          markersRef.current.push(marker);
+          console.log(`✅ Marker ${index + 1} created and added to map`);
+        } catch (markerError) {
+          console.error(`❌ Error creating marker ${index + 1}:`, markerError);
         }
       });
-
-      marker.addListener('click', () => {
-        setSelectedSpot(spot);
-      });
-
-      markersRef.current.push(marker);
-    });
+      
+      console.log('🎯 Total markers created:', markersRef.current.length);
+    } catch (error) {
+      console.error('❌ Error in updateMarkers:', error);
+    }
   };
 
-  const getMarkerIcon = (availability: string) => {
-    // Create SVG data URLs for different availability states
-    const colors: Record<string, string> = {
-      available: '#10B981',
-      reserved: '#F59E0B',
-      occupied: '#EF4444'
-    };
 
-    const color = colors[availability] || '#6B7280';
+
+  const getMarkerIcon = (status: string) => {
+    const iconPath = (() => {
+      switch (status) {
+        case 'available':
+          return '/markers/available.svg';
+        case 'reserved':
+          return '/markers/reserved.svg';
+        case 'occupied':
+          return '/markers/occupied.svg';
+        default:
+          return '/markers/default.svg';
+      }
+    })();
     
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-      <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="16" cy="16" r="12" fill="${color}" stroke="white" stroke-width="2"/>
-        <path d="M16 8l-4 8h8l-4-8z" fill="white"/>
-      </svg>
-    `)}`;
+    console.log(`🎯 Marker icon for status '${status}': ${iconPath}`);
+    return iconPath;
   };
+
+  // Test marker icon accessibility
+  useEffect(() => {
+    if (!isMounted) return;
+    
+    const testMarkerIcons = async () => {
+      const statuses = ['available', 'reserved', 'occupied', 'default'];
+      for (const status of statuses) {
+        const iconPath = getMarkerIcon(status);
+        try {
+          const response = await fetch(iconPath);
+          console.log(`🎯 Marker icon ${status}: ${response.ok ? '✅ Accessible' : '❌ Not accessible'} (${response.status})`);
+        } catch (error) {
+          console.error(`🎯 Marker icon ${status} fetch error:`, error);
+        }
+      }
+    };
+    
+    testMarkerIcons();
+  }, [isMounted]);
 
   if (mapError) {
     return (
@@ -819,8 +1234,8 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    {getTypeIcon(spot.type)}
-                    <span className="text-xs text-muted-foreground">{spot.type}</span>
+                    {getTypeIcon(getLocationType(spot))}
+                    <span className="text-xs text-muted-foreground">{getLocationTypeText(spot)}</span>
                   </div>
                   <button 
                     onClick={(e) => {
@@ -842,17 +1257,17 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1">
                     <DollarSign size={12} className="text-green-600" />
-                    <span className="text-sm font-medium">{spot.price} RON</span>
+                    <span className="text-sm font-medium">{getLocationPriceText(spot)}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Star size={12} className="text-yellow-500" />
-                    <span className="text-xs">{spot.rating}</span>
+                    <span className="text-xs">{getLocationRatingText(spot)}</span>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-1 mt-1">
                   <Clock size={12} className="text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">{spot.distance}</span>
+                  <span className="text-xs text-muted-foreground">{getLocationDistance(spot)}</span>
                 </div>
               </div>
             ))}
@@ -870,14 +1285,12 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
         <div ref={mapRef} className="w-full h-full" />
         
         {/* Map Controls */}
-        <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-          <button className="p-3 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow" onClick={handleEnableAlerts}>
-            Activează alerte
-          </button>
-          <button className="p-3 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <Navigation size={20} className="text-foreground" />
-          </button>
-          <button className="p-3 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+        <div className="absolute top-4 right-4 z-10 space-y-2">
+          <button 
+            onClick={toggleMapType} 
+            className="p-3 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow"
+            title="Schimbă tipul hărții"
+          >
             <Zap size={20} className="text-foreground" />
           </button>
         </div>
@@ -906,15 +1319,15 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
             <div className="flex items-center gap-4 mb-3">
               <div className="flex items-center gap-1">
                 <DollarSign size={16} className="text-green-600" />
-                <span className="font-medium">{selectedSpot.price} RON/oră</span>
+                <span className="font-medium">{getLocationPriceText(selectedSpot)}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Star size={16} className="text-yellow-500" />
-                <span>{selectedSpot.rating}</span>
+                <span>{getLocationRatingText(selectedSpot)}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Clock size={16} className="text-muted-foreground" />
-                <span className="text-sm">{selectedSpot.distance}</span>
+                <span className="text-sm">{getLocationDistance(selectedSpot)}</span>
               </div>
             </div>
             
@@ -925,27 +1338,36 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
                   <div className="w-3 h-3 rounded-full bg-green-600"></div>
                   <span className="text-xs font-medium">Disponibil</span>
                   <span className="text-sm font-bold text-green-600">
-                    {filteredSpots.filter(spot => spot.availability === 'available').length}
+                    {(() => {
+                      const location = parkingLocations.find(loc => loc.name === selectedSpot.name);
+                      return location ? location.available_spots : 0;
+                    })()}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-yellow-600"></div>
                   <span className="text-xs font-medium">Rezervat</span>
                   <span className="text-sm font-bold text-yellow-600">
-                    {filteredSpots.filter(spot => spot.availability === 'reserved').length}
+                    {(() => {
+                      const location = parkingLocations.find(loc => loc.name === selectedSpot.name);
+                      return location ? location.reserved_spots : 0;
+                    })()}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-600"></div>
                   <span className="text-xs font-medium">Ocupat</span>
                   <span className="text-sm font-bold text-red-600">
-                    {filteredSpots.filter(spot => spot.availability === 'occupied').length}
+                    {(() => {
+                      const location = parkingLocations.find(loc => loc.name === selectedSpot.name);
+                      return location ? location.occupied_spots : 0;
+                    })()}
                   </span>
                 </div>
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 mb-3">
               <button 
                 onClick={() => handleAddToFavorites(selectedSpot)}
                 className="flex-1 bg-primary text-primary-foreground py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors"
@@ -968,6 +1390,22 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
                   Șterge Ruta
                 </button>
               )}
+            </div>
+
+            {/* Raportează Loc Liber Button */}
+            <div className="flex gap-2">
+              <button 
+                onClick={() => {
+                  const location = parkingLocations.find(loc => loc.name === selectedSpot.name);
+                  if (location) {
+                    // Pentru simplitate, raportăm locul A1 ca fiind liber
+                    handleReportFreeSpot(location.id, 'A1');
+                  }
+                }}
+                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Raportează Loc Liber
+              </button>
             </div>
           </div>
         )}
@@ -1008,8 +1446,8 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  {getTypeIcon(spot.type)}
-                  <span className="text-xs text-muted-foreground">{spot.type}</span>
+                  {getTypeIcon(getLocationType(spot))}
+                  <span className="text-xs text-muted-foreground">{getLocationTypeText(spot)}</span>
                 </div>
                 <button 
                   onClick={(e) => {
@@ -1031,17 +1469,17 @@ const MapWithParkingPins: React.FC<MapWithParkingPinsProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
                   <DollarSign size={12} className="text-green-600" />
-                  <span className="text-sm font-medium">{spot.price} RON</span>
+                  <span className="text-sm font-medium">{getLocationPriceText(spot)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Star size={12} className="text-yellow-500" />
-                  <span className="text-xs">{spot.rating}</span>
+                  <span className="text-xs">{getLocationRatingText(spot)}</span>
                 </div>
               </div>
               
               <div className="flex items-center gap-1 mt-1">
                 <Clock size={12} className="text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">{spot.distance}</span>
+                <span className="text-xs text-muted-foreground">{getLocationDistance(spot)}</span>
               </div>
             </div>
           ))}

@@ -9,6 +9,12 @@ if (!GOOGLE_MAPS_API_KEY) {
 
 const libraries = [...(GOOGLE_MAPS_CONFIG.LIBRARIES || ['places'])] as unknown as Library[];
 
+console.log('🔧 Google Maps Loader Configuration:', {
+  apiKey: GOOGLE_MAPS_API_KEY ? '✅ Set' : '❌ Missing',
+  libraries,
+  version: 'weekly'
+});
+
 // Shared singleton Loader to avoid multiple script injections
 export const googleMapsLoader = new Loader({
   apiKey: GOOGLE_MAPS_API_KEY,

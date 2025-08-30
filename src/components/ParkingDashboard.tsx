@@ -306,7 +306,14 @@ const ParkingDashboard: React.FC = () => {
 
                 {/* Right Sidebar - App Functions */}
                 <div className="hidden xl:block w-80 bg-card border-l border-border">
-                  <AppFunctionsSidebar />
+                  <AppFunctionsSidebar 
+                    user={{
+                      id: 'user-1',
+                      email: 'user@example.com',
+                      name: 'Utilizator Demo'
+                    }}
+                    onClose={() => {}}
+                  />
                 </div>
               </>}
           </div>

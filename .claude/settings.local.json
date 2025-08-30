@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(C:\\c\\Users\\Admin\\app1/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

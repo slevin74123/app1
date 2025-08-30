@@ -1,10 +1,10 @@
 // Configurarea Supabase
 export const SUPABASE_CONFIG = {
   // URL-ul proiectului Supabase
-  URL: 'https://zugwcilkqqkyzloekddp.supabase.co',
+  URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zugwcilkqqkyzloekddp.supabase.co',
   
   // Cheia anonimă pentru client-side
-  ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1Z3djaWxrcXFreXpsb2VrZGRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0MDA3NDEsImV4cCI6MjA2Nzk3Njc0MX0.M0Qmw4NaI-1DXacU2N_eTP3YEKKEw52hmSyCAudf_fw',
+  ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1Z3djaWxrcXFreXpsb2VrZGRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0MDA3NDEsImV4cCI6MjA2Nzk3Njc0MX0.M0Qmw4NaI-1DXacU2N_eTP3YEKKEw52hmSyCAudf_fw',
   
   // Configurare pentru autentificare
   AUTH: {
@@ -52,9 +52,18 @@ export const SUPABASE_CONFIG = {
 
 // Funcție pentru a obține configurarea Supabase
 export const getSupabaseConfig = () => {
+  // Verifică dacă URL-ul este accesibil
+  const url = SUPABASE_CONFIG.URL;
+  const anonKey = SUPABASE_CONFIG.ANON_KEY;
+  
+  // Log pentru debugging
+  if (typeof window !== 'undefined') {
+    console.log('Supabase Config:', { url, anonKey: anonKey ? '***' : 'missing' });
+  }
+  
   return {
-    url: SUPABASE_CONFIG.URL,
-    anonKey: SUPABASE_CONFIG.ANON_KEY,
+    url,
+    anonKey,
     auth: {
       autoRefreshToken: true,
       persistSession: true,
