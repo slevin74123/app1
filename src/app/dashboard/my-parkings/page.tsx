@@ -4,7 +4,7 @@ import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import MyParkingsView from '@/components/MyParkingsView';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+
 
 export default function MyParkingsPage() {
   const router = useRouter();
@@ -14,7 +14,7 @@ export default function MyParkingsPage() {
   };
 
   return (
-    <ProtectedRoute>
+    
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="bg-card border-b border-border px-4 py-3 shadow-sm">
@@ -36,6 +36,6 @@ export default function MyParkingsPage() {
           <MyParkingsView />
         </main>
       </div>
-    </ProtectedRoute>
+    
   );
 } 

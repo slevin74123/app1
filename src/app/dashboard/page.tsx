@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 import { Filter } from 'lucide-react';
 import ParkingSyncButton from '@/components/ParkingSyncButton';
 import MainSearchBar from '@/components/MainSearchBar';

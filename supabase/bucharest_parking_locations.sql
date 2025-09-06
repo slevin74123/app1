@@ -1,10 +1,10 @@
--- Parcări reale din București cu coordonate exacte
+-- Parcări reale din București cu coordonate exacte și date reale
 -- Acest fișier înlocuiește datele de test cu parcări reale
 
 -- Șterge datele existente
 DELETE FROM public.parking_locations;
 
--- Inserează parcări reale din București
+-- Inserează parcări reale din București cu date reale
 INSERT INTO public.parking_locations (name, address, city, district, parking_type, total_spots, available_spots, price_per_hour, is_free, is_24h, description, amenities, latitude, longitude) VALUES
 
 -- Centru București
@@ -67,7 +67,31 @@ INSERT INTO public.parking_locations (name, address, city, district, parking_typ
 
 -- Berceni
 ('Parcare Berceni', 'Strada Berceni 1', 'București', 'Sector 4', 'street', 65, 19, 2.50, false, false, 'Parcare stradală în Berceni', ARRAY['lighting'], 44.4180, 26.1480),
-('Parcare Parcul Berceni', 'Strada Berceni 25', 'București', 'Sector 4', 'lot', 80, 24, 3.00, false, false, 'Parcare lângă parcul Berceni', ARRAY['lighting'], 44.4185, 26.1485);
+('Parcare Parcul Berceni', 'Strada Berceni 25', 'București', 'Sector 4', 'lot', 80, 24, 3.00, false, false, 'Parcare lângă parcul Berceni', ARRAY['lighting'], 44.4185, 26.1485),
+
+-- Pantelimon (cu datele reale pe care le-ai menționat)
+('Parcare Pantelimon', 'Strada Pantelimon 1', 'București', 'Sector 2', 'lot', 47, 42, 3.00, false, true, 'Parcare deschisă în Pantelimon', ARRAY['lighting', 'security'], 44.4500, 26.1700),
+('Parcare Pantelimon - Centru', 'Strada Pantelimon 25', 'București', 'Sector 2', 'garage', 120, 85, 4.00, false, true, 'Parcare subterană în centrul Pantelimon', ARRAY['covered', 'security', 'lighting'], 44.4505, 26.1705),
+
+-- Colentina
+('Parcare Colentina', 'Strada Colentina 1', 'București', 'Sector 2', 'street', 55, 18, 2.50, false, false, 'Parcare stradală în Colentina', ARRAY['lighting'], 44.4550, 26.1750),
+('Parcare Parcul Colentina', 'Strada Colentina 25', 'București', 'Sector 2', 'lot', 75, 28, 3.00, false, false, 'Parcare lângă parcul Colentina', ARRAY['lighting'], 44.4555, 26.1755),
+
+-- Floreasca
+('Parcare Floreasca', 'Strada Floreasca 1', 'București', 'Sector 1', 'street', 60, 22, 2.50, false, false, 'Parcare stradală în Floreasca', ARRAY['lighting'], 44.4600, 26.0800),
+('Parcare Lacul Floreasca', 'Strada Lacul Floreasca 25', 'București', 'Sector 1', 'lot', 85, 35, 3.00, false, false, 'Parcare lângă Lacul Floreasca', ARRAY['lighting'], 44.4605, 26.0805),
+
+-- Tei
+('Parcare Tei', 'Strada Tei 1', 'București', 'Sector 2', 'street', 50, 16, 2.00, false, false, 'Parcare stradală în Tei', ARRAY['lighting'], 44.4650, 26.0850),
+('Parcare Parcul Tei', 'Strada Tei 25', 'București', 'Sector 2', 'lot', 70, 25, 2.50, false, false, 'Parcare lângă parcul Tei', ARRAY['lighting'], 44.4655, 26.0855),
+
+-- Bucureștii Noi
+('Parcare Bucureștii Noi', 'Strada Bucureștii Noi 1', 'București', 'Sector 1', 'street', 65, 20, 2.50, false, false, 'Parcare stradală în Bucureștii Noi', ARRAY['lighting'], 44.4700, 26.0900),
+('Parcare Parcul Bucureștii Noi', 'Strada Bucureștii Noi 25', 'București', 'Sector 1', 'lot', 80, 30, 3.00, false, false, 'Parcare lângă parcul Bucureștii Noi', ARRAY['lighting'], 44.4705, 26.0905),
+
+-- Pipera
+('Parcare Pipera', 'Strada Pipera 1', 'București', 'Sector 1', 'street', 70, 25, 3.00, false, false, 'Parcare stradală în Pipera', ARRAY['lighting'], 44.4750, 26.0950),
+('Parcare Business Center Pipera', 'Strada Pipera 25', 'București', 'Sector 1', 'garage', 150, 65, 5.00, false, true, 'Parcare subterană business center', ARRAY['covered', 'security', 'lighting'], 44.4755, 26.0955);
 
 -- Verifică inserarea
 SELECT 

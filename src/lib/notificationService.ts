@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_CONFIG } from '@/config/supabase';
+import { Database, ParkingNotificationInsert, ParkingNotificationUpdate } from '@/types/supabase';
 
 export interface ParkingNotification {
   id: string;
@@ -24,11 +25,11 @@ export interface NotificationMatch {
 
 export class NotificationService {
   // Singleton pattern pentru a evita multiplele instanțe GoTrueClient
-  private static supabaseClient: ReturnType<typeof createClient> | null = null;
+  private static supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
   
   private static getSupabaseClient() {
     if (!this.supabaseClient) {
-      this.supabaseClient = createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.ANON_KEY);
+      this.supabaseClient = createClient<Database>(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.ANON_KEY);
     }
     return this.supabaseClient;
   }
